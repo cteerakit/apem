@@ -1,0 +1,17 @@
+# Build outputs
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# APEM local data
+settings.json
+
+# NuGet
+packages/
+
+# Publish
+AppPackages/
+*.msix
+*.appxupload

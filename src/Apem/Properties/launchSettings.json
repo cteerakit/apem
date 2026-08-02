@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Apem (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Apem (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
