@@ -61,10 +61,10 @@ public sealed partial class TimerService : ObservableObject, IDisposable
     {
         var turbo = _settings.IsTurboMode;
 
-        ApplySpawn(BountyRune, "Bounty Rune", ObjectiveTimerRules.NextBountyRune(clock, turbo), clock);
-        ApplySpawn(PowerRune, "Power Rune", ObjectiveTimerRules.NextPowerRune(clock, turbo), clock);
+        ApplySpawn(BountyRune, "Bounty Rune", ObjectiveTimerRules.NextBountyRune(clock), clock);
+        ApplySpawn(PowerRune, "Power Rune", ObjectiveTimerRules.NextPowerRune(clock), clock);
         ApplySpawn(WisdomRune, "Wisdom Rune", ObjectiveTimerRules.NextWisdomRune(clock), clock);
-        ApplySpawn(LotusPool, "Lotus Pool", ObjectiveTimerRules.NextLotus(clock), clock);
+        ApplySpawn(LotusPool, "Lotus Pool", ObjectiveTimerRules.NextLotus(clock, turbo), clock);
 
         CheckAlerts();
     }

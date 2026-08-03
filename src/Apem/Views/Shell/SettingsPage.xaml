@@ -72,15 +72,6 @@
                             <ToggleSwitch x:Name="LotusTimerToggle" Header="Lotus pool" />
                         </StackPanel>
 
-                        <StackPanel Spacing="4">
-                            <ToggleSwitch x:Name="BuildToggle" Header="Build" />
-                            <TextBlock
-                                Margin="0,0,0,4"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Popular item-build suggestions for your current hero."
-                                TextWrapping="WrapWholeWords" />
-                        </StackPanel>
-
                         <Slider
                             x:Name="OpacitySlider"
                             Header="Overlay opacity"
@@ -88,7 +79,6 @@
                             Minimum="0.4"
                             StepFrequency="0.05" />
                         <ToggleSwitch x:Name="TurboToggle" Header="Turbo mode timers" />
-                        <ToggleSwitch x:Name="TimerAlertsToggle" Header="Timer alerts" />
 
                         <StackPanel Spacing="4">
                             <TextBlock Text="Widget positions" Style="{StaticResource BodyStrongTextBlockStyle}" />
@@ -107,24 +97,6 @@
                                 TextWrapping="WrapWholeWords"
                                 Visibility="Collapsed" />
                         </StackPanel>
-                    </StackPanel>
-                </Border>
-
-                <Border
-                    Padding="20"
-                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1"
-                    CornerRadius="12">
-                    <StackPanel Spacing="12">
-                        <TextBlock Text="Debug" Style="{StaticResource SubtitleTextBlockStyle}" />
-                        <ToggleSwitch
-                            x:Name="DebugPreviewToggle"
-                            Header="Preview overlay with mock data" />
-                        <TextBlock
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Text="Shows sample GPM/XPM, timers, and build so you can design without launching Dota."
-                            TextWrapping="WrapWholeWords" />
                     </StackPanel>
                 </Border>
             </StackPanel>

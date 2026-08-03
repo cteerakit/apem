@@ -38,6 +38,11 @@
                     <FontIcon Glyph="&#xE765;" />
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
+            <NavigationViewItem Content="Developer" Tag="developer">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE943;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
         </NavigationView.MenuItems>
 
         <Frame x:Name="ContentFrame" />

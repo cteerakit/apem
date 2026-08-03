@@ -33,6 +33,7 @@ public sealed partial class ShellPage : Page
             "status" => typeof(StatusPage),
             "settings" => typeof(SettingsPage),
             "shortcuts" => typeof(ShortcutsPage),
+            "developer" => typeof(DeveloperPage),
             _ => typeof(SetupPage),
         };
 

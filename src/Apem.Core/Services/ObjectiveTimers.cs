@@ -79,58 +79,34 @@ public sealed class TimerEntry : INotifyPropertyChanged
 
 public static class ObjectiveTimerRules
 {
-    public static int NextBountyRune(int clock, bool turbo)
+    private const int BountyIntervalSeconds = 240;
+    private const int PowerIntervalSeconds = 120;
+    private const int WisdomIntervalSeconds = 420;
+    private const int LotusIntervalSeconds = 180;
+    private const int TurboLotusIntervalSeconds = 90;
+
+    public static int NextBountyRune(int clock)
     {
-        var interval = turbo ? 180 : 240;
+        // Bounty runes are already on the map when the horn sounds.
         if (clock < 0)
         {
             return 0;
         }
 
-        return ((clock / interval) + 1) * interval;
+        return NextInterval(clock, BountyIntervalSeconds);
     }
 
-    public static int NextPowerRune(int clock, bool turbo)
+    public static int NextPowerRune(int clock) => NextInterval(clock, PowerIntervalSeconds);
+
+    public static int NextWisdomRune(int clock) => NextInterval(clock, WisdomIntervalSeconds);
+
+    public static int NextLotus(int clock, bool turbo) =>
+        NextInterval(clock, turbo ? TurboLotusIntervalSeconds : LotusIntervalSeconds);
+
+    /// <summary>Clock of the next multiple of <paramref name="interval"/>, treating pre-horn time as 0:00.</summary>
+    private static int NextInterval(int clock, int interval)
     {
-        if (turbo)
-        {
-            return NextBountyRune(clock, true);
-        }
-
-        if (clock < 120)
-        {
-            return 120;
-        }
-
-        if (clock < 360)
-        {
-            return 360;
-        }
-
-        var sinceSix = clock - 360;
-        var interval = 120;
-        return 360 + (((sinceSix / interval) + 1) * interval);
-    }
-
-    public static int NextWisdomRune(int clock)
-    {
-        if (clock < 420)
-        {
-            return 420;
-        }
-
-        var since = clock - 420;
-        return 420 + (((since / 420) + 1) * 420);
-    }
-
-    public static int NextLotus(int clock)
-    {
-        if (clock < 180)
-        {
-            return 180;
-        }
-
-        var since = clock - 180;
-        return 180 + (((since / 180) + 1) * 180);
+        var elapsed = Math.Max(0, clock);
+        return ((elapsed / interval) + 1) * interval;
     }
 }

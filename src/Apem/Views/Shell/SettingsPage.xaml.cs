@@ -30,12 +30,9 @@ public sealed partial class SettingsPage : Page
         PowerTimerToggle.IsOn = viewModel.ShowPowerTimer;
         WisdomTimerToggle.IsOn = viewModel.ShowWisdomTimer;
         LotusTimerToggle.IsOn = viewModel.ShowLotusTimer;
-        BuildToggle.IsOn = viewModel.ShowBuildPanel;
         OpacitySlider.Value = viewModel.OverlayOpacity;
         RuneLeadNumberBox.Value = viewModel.RuneTimerLeadSeconds;
         TurboToggle.IsOn = viewModel.IsTurboMode;
-        TimerAlertsToggle.IsOn = viewModel.TimerSoundsEnabled;
-        DebugPreviewToggle.IsOn = viewModel.DebugOverlayPreview;
         _suppressEvents = false;
 
         PlayerToggle.Toggled += OnSettingChanged;
@@ -43,12 +40,9 @@ public sealed partial class SettingsPage : Page
         PowerTimerToggle.Toggled += OnSettingChanged;
         WisdomTimerToggle.Toggled += OnSettingChanged;
         LotusTimerToggle.Toggled += OnSettingChanged;
-        BuildToggle.Toggled += OnSettingChanged;
         OpacitySlider.ValueChanged += OnOpacityChanged;
         RuneLeadNumberBox.ValueChanged += OnRuneLeadChanged;
         TurboToggle.Toggled += OnSettingChanged;
-        TimerAlertsToggle.Toggled += OnSettingChanged;
-        DebugPreviewToggle.Toggled += OnSettingChanged;
     }
 
     private void OnOpacityChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
@@ -105,12 +99,9 @@ public sealed partial class SettingsPage : Page
         _viewModel.ShowPowerTimer = PowerTimerToggle.IsOn;
         _viewModel.ShowWisdomTimer = WisdomTimerToggle.IsOn;
         _viewModel.ShowLotusTimer = LotusTimerToggle.IsOn;
-        _viewModel.ShowBuildPanel = BuildToggle.IsOn;
         _viewModel.OverlayOpacity = OpacitySlider.Value;
         _viewModel.RuneTimerLeadSeconds = (int)RuneLeadNumberBox.Value;
         _viewModel.IsTurboMode = TurboToggle.IsOn;
-        _viewModel.TimerSoundsEnabled = TimerAlertsToggle.IsOn;
-        _viewModel.DebugOverlayPreview = DebugPreviewToggle.IsOn;
         _viewModel.SaveSettingsCommand.Execute(null);
     }
 }

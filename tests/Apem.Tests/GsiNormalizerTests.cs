@@ -25,9 +25,27 @@ public class GsiNormalizerTests
     }
 
     [Fact]
-    public void ObjectiveTimerRules_ReturnsNextBountyRune()
+    public void ObjectiveTimerRules_BountyRuneSpawnsEveryFourMinutes()
     {
-        Assert.Equal(240, ObjectiveTimerRules.NextBountyRune(100, turbo: false));
-        Assert.Equal(180, ObjectiveTimerRules.NextBountyRune(100, turbo: true));
+        Assert.Equal(0, ObjectiveTimerRules.NextBountyRune(-30));
+        Assert.Equal(240, ObjectiveTimerRules.NextBountyRune(100));
+        Assert.Equal(480, ObjectiveTimerRules.NextBountyRune(240));
+    }
+
+    [Fact]
+    public void ObjectiveTimerRules_PowerRuneSpawnsEveryTwoMinutes()
+    {
+        Assert.Equal(120, ObjectiveTimerRules.NextPowerRune(0));
+        Assert.Equal(240, ObjectiveTimerRules.NextPowerRune(120));
+        Assert.Equal(360, ObjectiveTimerRules.NextPowerRune(300));
+    }
+
+    [Fact]
+    public void ObjectiveTimerRules_LotusHalvesItsIntervalInTurbo()
+    {
+        Assert.Equal(180, ObjectiveTimerRules.NextLotus(100, turbo: false));
+        Assert.Equal(360, ObjectiveTimerRules.NextLotus(180, turbo: false));
+        Assert.Equal(90, ObjectiveTimerRules.NextLotus(0, turbo: true));
+        Assert.Equal(180, ObjectiveTimerRules.NextLotus(90, turbo: true));
     }
 }
