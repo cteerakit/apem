@@ -4,95 +4,42 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:vm="using:Apem.ViewModels"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d"
-    x:DataType="vm:ShellViewModel">
+    mc:Ignorable="d">
 
-    <ScrollViewer>
-        <Grid Padding="32" RowSpacing="24" MaxWidth="920">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
+    <NavigationView
+        x:Name="NavView"
+        IsBackButtonVisible="Collapsed"
+        IsSettingsVisible="False"
+        PaneDisplayMode="Auto"
+        OpenPaneLength="220"
+        CompactPaneLength="48"
+        CompactModeThresholdWidth="0"
+        ExpandedModeThresholdWidth="1008"
+        SelectionChanged="NavView_SelectionChanged">
+        <NavigationView.MenuItems>
+            <NavigationViewItem Content="Setup" Tag="setup">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE8F1;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+            <NavigationViewItem Content="Status" Tag="status">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE9D2;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+            <NavigationViewItem Content="Settings" Tag="settings">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE713;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+            <NavigationViewItem Content="Shortcuts" Tag="shortcuts">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE765;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+        </NavigationView.MenuItems>
 
-            <StackPanel Grid.Row="0" Spacing="8">
-                <TextBlock Text="APEM" FontSize="42" FontWeight="Bold" />
-                <TextBlock
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="Dota 2 live companion overlay. Run Dota in borderless windowed mode with -gamestateintegration." />
-            </StackPanel>
-
-            <Border
-                Grid.Row="1"
-                Padding="20"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                CornerRadius="12">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="Setup checklist" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <TextBlock Text="1. GSI config installed to Dota cfg/gamestate_integration" />
-                    <TextBlock Text="2. Steam launch option: -gamestateintegration" />
-                    <TextBlock Text="3. Dota video: Borderless Windowed" />
-                    <TextBlock Text="4. Start a match — overlay updates automatically" />
-                    <TextBlock Text="{x:Bind ViewModel.InstallMessage, Mode=OneWay}" TextWrapping="WrapWholeWords" />
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <Button Content="Reinstall GSI config" Command="{x:Bind ViewModel.ReinstallGsiConfigCommand}" />
-                        <Button Content="Show overlay" Command="{x:Bind ViewModel.ShowOverlayCommand}" />
-                        <Button Content="Hide overlay" Command="{x:Bind ViewModel.HideOverlayCommand}" />
-                        <Button Content="Save settings" Command="{x:Bind ViewModel.SaveSettingsCommand}" />
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-
-            <Border
-                Grid.Row="2"
-                Padding="20"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                CornerRadius="12">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="Live status" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <TextBlock Text="{x:Bind ViewModel.GsiStatus, Mode=OneWay}" />
-                    <TextBlock Text="{x:Bind ViewModel.ConnectionStatus, Mode=OneWay}" />
-                    <TextBlock>
-                        <Run Text="Last update: " />
-                        <Run Text="{x:Bind ViewModel.LastUpdate, Mode=OneWay}" />
-                    </TextBlock>
-                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Hotkeys: Alt+F9 toggle overlay, Alt+` interactive mode. If the overlay blocks clicks, press Alt+F9 to hide it." />
-                </StackPanel>
-            </Border>
-
-            <Border
-                Grid.Row="3"
-                Padding="20"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                CornerRadius="12">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="Overlay panels" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <ToggleSwitch Header="Scoreboard" IsOn="{x:Bind ViewModel.ShowScoreboardPanel, Mode=TwoWay}" />
-                    <ToggleSwitch Header="Player stats" IsOn="{x:Bind ViewModel.ShowPlayerPanel, Mode=TwoWay}" />
-                    <ToggleSwitch Header="Items" IsOn="{x:Bind ViewModel.ShowItemsPanel, Mode=TwoWay}" />
-                    <ToggleSwitch Header="Abilities" IsOn="{x:Bind ViewModel.ShowAbilitiesPanel, Mode=TwoWay}" />
-                    <ToggleSwitch Header="Timers" IsOn="{x:Bind ViewModel.ShowTimersPanel, Mode=TwoWay}" />
-                    <ToggleSwitch Header="Draft counters" IsOn="{x:Bind ViewModel.ShowDraftPanel, Mode=TwoWay}" />
-                    <ToggleSwitch Header="Build guide" IsOn="{x:Bind ViewModel.ShowBuildPanel, Mode=TwoWay}" />
-                    <Slider
-                        Header="Overlay opacity"
-                        Maximum="1"
-                        Minimum="0.4"
-                        StepFrequency="0.05"
-                        Value="{x:Bind ViewModel.OverlayOpacity, Mode=TwoWay}" />
-                    <ToggleSwitch Header="Turbo mode timers" IsOn="{x:Bind ViewModel.IsTurboMode, Mode=TwoWay}" />
-                    <ToggleSwitch Header="Timer alerts" IsOn="{x:Bind ViewModel.TimerSoundsEnabled, Mode=TwoWay}" />
-                </StackPanel>
-            </Border>
-        </Grid>
-    </ScrollViewer>
+        <Frame x:Name="ContentFrame" />
+    </NavigationView>
 </Page>

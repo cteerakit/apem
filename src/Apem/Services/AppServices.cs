@@ -10,23 +10,49 @@ public static class AppServices
     public static TimerService TimerService { get; private set; } = null!;
     public static OverlayWindowService OverlayService { get; private set; } = null!;
     public static HotkeyService HotkeyService { get; private set; } = null!;
+    public static HudFontService HudFonts { get; private set; } = new();
 
     public static void Initialize(Microsoft.UI.Dispatching.DispatcherQueue dispatcherQueue)
     {
         Settings = AppSettings.Load();
         MatchStore = new MatchStore();
+        HudFonts = new HudFontService();
+        HudFonts.Initialize();
         GsiListener = new GsiListenerService(MatchStore, Settings);
-        TimerService = new TimerService(MatchStore, Settings);
+        TimerService = new TimerService(MatchStore, Settings, dispatcherQueue);
         OverlayService = new OverlayWindowService(Settings);
         HotkeyService = new HotkeyService(OverlayService, Settings, dispatcherQueue);
         GsiListener.Start();
+
+        // Never restore a blocking overlay across sessions; user enables it explicitly.
+        Settings.OverlayVisible = false;
+        Settings.OverlayInteractive = false;
+        Settings.Save();
+
+        if (Settings.DebugOverlayPreview)
+        {
+            MatchStore.ApplyDebugPreview();
+        }
     }
 
     public static void Shutdown()
     {
         OverlayService.Close();
+        TimerService.Dispose();
         GsiListener.Stop();
         HotkeyService.Dispose();
+    }
+
+    public static void ApplyDebugOverlayMode()
+    {
+        if (Settings.DebugOverlayPreview)
+        {
+            MatchStore.ApplyDebugPreview();
+            OverlayService.ShowOverlay();
+            return;
+        }
+
+        MatchStore.ClearDebugPreview();
     }
 
     public static GsiInstallResult EnsureGsiConfigInstalled() => GsiInstaller.Install(Settings);

@@ -1,46 +1,84 @@
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using Apem.Models.Gsi;
 
 namespace Apem.Services;
 
-public sealed class TimerEntry
+public sealed class TimerEntry : INotifyPropertyChanged
 {
-    public string Name { get; set; } = string.Empty;
-    public string? Label { get; set; }
-    public int? SecondsUntil { get; set; }
-    public int? WindowEndSeconds { get; set; }
-    public int? SpawnAtClock { get; set; }
-    public bool IsManual { get; set; }
+    private string _name = string.Empty;
+    private int? _secondsUntil;
+    private int? _spawnAtClock;
 
-    public string Display
+    public string Name
+    {
+        get => _name;
+        set => SetField(ref _name, value);
+    }
+
+    public int? SecondsUntil
+    {
+        get => _secondsUntil;
+        set
+        {
+            if (SetField(ref _secondsUntil, value))
+            {
+                OnPropertyChanged(nameof(CountdownDisplay));
+            }
+        }
+    }
+
+    public int? SpawnAtClock
+    {
+        get => _spawnAtClock;
+        set => SetField(ref _spawnAtClock, value);
+    }
+
+    /// <summary>MM:SS countdown until the next spawn, or empty when not applicable.</summary>
+    public string CountdownDisplay
     {
         get
         {
-            if (!string.IsNullOrWhiteSpace(Label))
+            if (SecondsUntil is not int seconds || seconds < 0)
             {
-                return Label;
+                return string.Empty;
             }
 
-            if (SecondsUntil is null)
-            {
-                return "—";
-            }
-
-            var main = GsiNormalizer.FormatClock(SecondsUntil.Value);
-            if (WindowEndSeconds is int end && end > SecondsUntil)
-            {
-                return $"{main} – {GsiNormalizer.FormatClock(end)}";
-            }
-
-            return main;
+            return GsiNormalizer.FormatClock(seconds);
         }
     }
+
+    /// <summary>True when a spawn countdown should be shown on the overlay.</summary>
+    public bool IsWithinLeadWindow(int leadSeconds) =>
+        SecondsUntil is int seconds && seconds >= 0 && seconds <= leadSeconds;
+
+    public void ApplySpawn(string name, int secondsUntil, int spawnAtClock)
+    {
+        Name = name;
+        SpawnAtClock = spawnAtClock;
+        SecondsUntil = secondsUntil;
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value))
+        {
+            return false;
+        }
+
+        field = value;
+        OnPropertyChanged(propertyName);
+        return true;
+    }
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }
 
 public static class ObjectiveTimerRules
 {
-    public const int RoshanMinRespawnSeconds = 8 * 60;
-    public const int RoshanMaxRespawnSeconds = 11 * 60;
-
     public static int NextBountyRune(int clock, bool turbo)
     {
         var interval = turbo ? 180 : 240;

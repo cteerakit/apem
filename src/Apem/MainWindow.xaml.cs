@@ -20,7 +20,6 @@ public sealed partial class MainWindow : Window
 
         RootFrame.Navigate(typeof(ShellPage));
 
-        Activated += OnActivated;
         Closed += OnClosed;
 
         var hwnd = Win32WindowHelper.GetHandle(this);
@@ -30,17 +29,6 @@ public sealed partial class MainWindow : Window
         });
 
         AppServices.HotkeyService.Register(this);
-    }
-
-    private void OnActivated(object sender, WindowActivatedEventArgs args)
-    {
-        if (args.WindowActivationState == WindowActivationState.Deactivated)
-        {
-            return;
-        }
-
-        // Keep the settings shell above the overlay when both are open.
-        AppWindow.MoveInZOrderAtTop();
     }
 
     private void OnClosed(object sender, WindowEventArgs args)

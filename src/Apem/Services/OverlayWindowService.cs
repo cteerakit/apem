@@ -1,6 +1,5 @@
 using Apem.Interop;
 using Apem.Views.Overlay;
-using Microsoft.UI.Xaml;
 
 namespace Apem.Services;
 
@@ -29,8 +28,14 @@ public sealed class OverlayWindowService
     public void ShowOverlay()
     {
         var window = EnsureOverlay();
-        window.ConfigureNativeWindow(clickThrough: !_settings.OverlayInteractive);
+        var clickThrough = !_settings.OverlayInteractive;
+
+        ConfigureOverlayBounds();
         window.AppWindow.Show();
+        window.RefreshTimerDisplays();
+        ApplyNativeState(window, clickThrough, topmost: true);
+        ScheduleNativeStateRefresh(window, clickThrough, topmost: true);
+
         _settings.OverlayVisible = true;
         _settings.Save();
     }
@@ -44,6 +49,7 @@ public sealed class OverlayWindowService
             return;
         }
 
+        OverlayClickThroughHelper.Reset(_overlayWindow);
         _overlayWindow.AppWindow.Hide();
         _settings.OverlayVisible = false;
         _settings.Save();
@@ -71,17 +77,36 @@ public sealed class OverlayWindowService
             return;
         }
 
-        _overlayWindow.ConfigureNativeWindow(clickThrough: !interactive);
+        var clickThrough = !interactive;
         _overlayWindow.SetInteractiveMode(interactive);
+        ApplyNativeState(_overlayWindow, clickThrough, topmost: _settings.OverlayVisible);
+        ScheduleNativeStateRefresh(_overlayWindow, clickThrough, topmost: _settings.OverlayVisible);
     }
 
     public void ApplySettings()
     {
+        if (_overlayWindow is null)
+        {
+            return;
+        }
+
+        _overlayWindow.ApplySettingsFromStore();
+        if (_settings.OverlayVisible)
+        {
+            ApplyNativeState(_overlayWindow, clickThrough: !_settings.OverlayInteractive, topmost: true);
+        }
+    }
+
+    public void ResetPanelPositions()
+    {
         if (_overlayWindow is not null)
         {
-            _overlayWindow.ApplySettingsFromStore();
-            _overlayWindow.ConfigureNativeWindow(clickThrough: !_settings.OverlayInteractive);
+            _overlayWindow.ResetPanelPositions();
+            return;
         }
+
+        _settings.PanelLayout = new PanelLayoutSettings();
+        _settings.Save();
     }
 
     public void ToggleInteractive() => SetInteractive(!_settings.OverlayInteractive);
@@ -93,9 +118,27 @@ public sealed class OverlayWindowService
             return;
         }
 
+        OverlayClickThroughHelper.Reset(_overlayWindow);
         _overlayWindow.Close();
         _overlayWindow = null;
         _settings.OverlayVisible = false;
+        _settings.OverlayInteractive = false;
+    }
+
+    private static void ApplyNativeState(OverlayWindow window, bool clickThrough, bool topmost)
+    {
+        window.ConfigureNativeWindow(clickThrough, topmost);
+    }
+
+    private static void ScheduleNativeStateRefresh(OverlayWindow window, bool clickThrough, bool topmost)
+    {
+        // Defer until layout has ActualWidth/ActualHeight for region math.
+        window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            ApplyNativeState(window, clickThrough, topmost);
+            window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+                ApplyNativeState(window, clickThrough, topmost));
+        });
     }
 
     private void ConfigureOverlayBounds()
@@ -111,9 +154,17 @@ public sealed class OverlayWindowService
 
         if (displayArea is not null)
         {
-            _overlayWindow.AppWindow.MoveAndResize(displayArea.WorkArea);
+            // OuterBounds covers the full monitor, including the taskbar strip.
+            // WorkArea would clip widgets so they cannot sit over the taskbar.
+            _overlayWindow.AppWindow.MoveAndResize(displayArea.OuterBounds);
         }
 
         _overlayWindow.AppWindow.IsShownInSwitchers = false;
+
+        var presenter = _overlayWindow.AppWindow.Presenter as Microsoft.UI.Windowing.OverlappedPresenter;
+        if (presenter is not null)
+        {
+            presenter.IsAlwaysOnTop = false;
+        }
     }
 }

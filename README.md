@@ -5,7 +5,7 @@ Windows desktop companion for Dota 2 with a transparent always-on-top overlay fe
 ## Features
 
 - Live match HUD: clock, score, KDA, GPM/XPM, items, abilities
-- Objective timers: bounty/power/wisdom/lotus + manual Roshan tracking
+- Objective timers: bounty/power/wisdom/lotus
 - Draft counters from OpenDota matchup data
 - Build suggestions from OpenDota item popularity
 - Click-through overlay with interactive layout mode

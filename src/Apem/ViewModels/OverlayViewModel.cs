@@ -2,16 +2,16 @@ using System.Collections.ObjectModel;
 using Apem.Models;
 using Apem.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 
 namespace Apem.ViewModels;
 
 public sealed partial class OverlayViewModel : ObservableObject
 {
     private readonly MatchStore _store = AppServices.MatchStore;
-    private readonly TimerService _timers = AppServices.TimerService;
     private readonly OpenDotaService _openDota = AppServices.OpenDota;
     private readonly AppSettings _settings = AppServices.Settings;
+    private string? _buildHeroKey;
+    private int _buildRequestId;
 
     [ObservableProperty]
     private MatchSnapshot _snapshot = new();
@@ -23,76 +23,41 @@ public sealed partial class OverlayViewModel : ObservableObject
     private bool _isInteractive;
 
     [ObservableProperty]
-    private bool _showScoreboardPanel = true;
-
-    [ObservableProperty]
     private bool _showPlayerPanel = true;
 
     [ObservableProperty]
-    private bool _showItemsPanel = true;
+    private bool _showBountyTimer = true;
 
     [ObservableProperty]
-    private bool _showAbilitiesPanel = true;
+    private bool _showPowerTimer = true;
 
     [ObservableProperty]
-    private bool _showTimersPanel = true;
+    private bool _showWisdomTimer = true;
 
     [ObservableProperty]
-    private bool _showDraftPanel = true;
+    private bool _showLotusTimer = true;
 
     [ObservableProperty]
     private bool _showBuildPanel = true;
 
-    public ObservableCollection<SlotSnapshot> Items { get; } = [];
-    public ObservableCollection<SlotSnapshot> Abilities { get; } = [];
-    public ObservableCollection<TimerEntry> ObjectiveTimers { get; } = [];
-    public ObservableCollection<CounterSuggestion> CounterSuggestions { get; } = [];
     public ObservableCollection<BuildSuggestionItem> BuildSuggestions { get; } = [];
 
     public PanelLayoutSettings Layout => _settings.PanelLayout;
 
     public OverlayViewModel()
     {
-        OverlayOpacity = _settings.OverlayOpacity;
-        IsInteractive = _settings.OverlayInteractive;
-        ShowScoreboardPanel = _settings.ShowScoreboardPanel;
-        ShowPlayerPanel = _settings.ShowPlayerPanel;
-        ShowItemsPanel = _settings.ShowItemsPanel;
-        ShowAbilitiesPanel = _settings.ShowAbilitiesPanel;
-        ShowTimersPanel = _settings.ShowTimersPanel;
-        ShowDraftPanel = _settings.ShowDraftPanel;
-        ShowBuildPanel = _settings.ShowBuildPanel;
-
+        ApplySettings();
         _store.SnapshotUpdated += OnSnapshotUpdated;
-        _timers.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName is nameof(TimerService.Timers) or null)
-            {
-                SyncTimers();
-            }
-        };
-
-        SyncTimers();
     }
 
     private async void OnSnapshotUpdated(MatchSnapshot snapshot)
     {
         Snapshot = snapshot;
-        Items.Clear();
-        foreach (var item in snapshot.Items)
-        {
-            Items.Add(item);
-        }
 
-        Abilities.Clear();
-        foreach (var ability in snapshot.Abilities)
+        if (_settings.DebugOverlayPreview)
         {
-            Abilities.Add(ability);
-        }
-
-        if (snapshot.IsInDraft)
-        {
-            await RefreshDraftDataAsync(snapshot);
+            ApplyMockBuild();
+            return;
         }
 
         if (!string.IsNullOrWhiteSpace(snapshot.HeroName))
@@ -101,58 +66,76 @@ public sealed partial class OverlayViewModel : ObservableObject
         }
     }
 
-    private async Task RefreshDraftDataAsync(MatchSnapshot snapshot)
+    private void ApplyMockBuild()
     {
-        CounterSuggestions.Clear();
-        var suggestions = await _openDota.GetCounterSuggestionsAsync(snapshot.Draft.EnemyHeroIds);
-        foreach (var suggestion in suggestions)
+        const string mockKey = "__mock__";
+        if (_buildHeroKey == mockKey && BuildSuggestions.Count > 0)
         {
-            CounterSuggestions.Add(suggestion);
+            return;
         }
+
+        _buildHeroKey = mockKey;
+        ReplaceBuildSuggestions(MockMatchData.CreateBuildSuggestions().Select(static i => i.Name));
     }
 
     private async Task RefreshBuildDataAsync(string heroInternalName)
     {
+        if (string.Equals(_buildHeroKey, heroInternalName, StringComparison.OrdinalIgnoreCase) &&
+            BuildSuggestions.Count > 0)
+        {
+            return;
+        }
+
+        var requestId = ++_buildRequestId;
         var heroes = await _openDota.GetHeroesAsync();
+        if (requestId != _buildRequestId)
+        {
+            return;
+        }
+
         var heroId = _openDota.ResolveHeroId(heroInternalName, heroes);
         if (heroId is null)
         {
             return;
         }
 
-        BuildSuggestions.Clear();
         var items = await _openDota.GetSuggestedItemsAsync(heroId.Value);
-        foreach (var item in items)
+        if (requestId != _buildRequestId)
         {
-            BuildSuggestions.Add(new BuildSuggestionItem { Name = item });
+            return;
         }
+
+        _buildHeroKey = heroInternalName;
+        ReplaceBuildSuggestions(items);
     }
 
-    private void SyncTimers()
+    private void ReplaceBuildSuggestions(IEnumerable<string> names)
     {
-        ObjectiveTimers.Clear();
-        foreach (var timer in _timers.Timers)
+        var next = names.ToList();
+        if (BuildSuggestions.Count == next.Count &&
+            BuildSuggestions.Select(static b => b.Name).SequenceEqual(next, StringComparer.OrdinalIgnoreCase))
         {
-            ObjectiveTimers.Add(timer);
+            return;
+        }
+
+        BuildSuggestions.Clear();
+        foreach (var name in next)
+        {
+            BuildSuggestions.Add(new BuildSuggestionItem { Name = name });
         }
     }
 
-    [RelayCommand]
-    private void MarkRoshanDead() => _timers.MarkRoshanDead();
+    public void RefreshSettings() => ApplySettings();
 
-    [RelayCommand]
-    private void ClearRoshan() => _timers.ClearRoshan();
-
-    public void RefreshSettings()
+    private void ApplySettings()
     {
         OverlayOpacity = _settings.OverlayOpacity;
         IsInteractive = _settings.OverlayInteractive;
-        ShowScoreboardPanel = _settings.ShowScoreboardPanel;
         ShowPlayerPanel = _settings.ShowPlayerPanel;
-        ShowItemsPanel = _settings.ShowItemsPanel;
-        ShowAbilitiesPanel = _settings.ShowAbilitiesPanel;
-        ShowTimersPanel = _settings.ShowTimersPanel;
-        ShowDraftPanel = _settings.ShowDraftPanel;
+        ShowBountyTimer = _settings.ShowBountyTimer;
+        ShowPowerTimer = _settings.ShowPowerTimer;
+        ShowWisdomTimer = _settings.ShowWisdomTimer;
+        ShowLotusTimer = _settings.ShowLotusTimer;
         ShowBuildPanel = _settings.ShowBuildPanel;
     }
 }

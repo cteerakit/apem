@@ -1,4 +1,4 @@
-using Apem.Services;
+using Apem.Interop;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 
@@ -7,6 +7,7 @@ namespace Apem.Services;
 public sealed class HotkeyService : IDisposable
 {
     private readonly OverlayWindowService _overlayService;
+    private readonly AppSettings _settings;
     private readonly DispatcherQueue _dispatcherQueue;
     private Window? _messageWindow;
     private bool _registered;
@@ -14,38 +15,35 @@ public sealed class HotkeyService : IDisposable
     public HotkeyService(OverlayWindowService overlayService, AppSettings settings, DispatcherQueue dispatcherQueue)
     {
         _overlayService = overlayService;
+        _settings = settings;
         _dispatcherQueue = dispatcherQueue;
-        _ = settings;
     }
 
     public void Register(Window shellWindow)
     {
-        if (_registered)
+        _messageWindow = shellWindow;
+        ApplyRegistrations();
+    }
+
+    public bool ApplyRegistrations()
+    {
+        if (_messageWindow is null)
         {
-            return;
+            return false;
         }
 
-        _messageWindow = shellWindow;
-        var hwnd = Interop.Win32WindowHelper.GetHandle(shellWindow);
+        var hwnd = Win32WindowHelper.GetHandle(_messageWindow);
+        UnregisterAll(hwnd);
 
-        Interop.NativeMethods.RegisterHotKey(
-            hwnd,
-            Interop.NativeMethods.HotkeyToggleOverlay,
-            Interop.NativeMethods.ModAlt | Interop.NativeMethods.ModNorepeat,
-            Interop.NativeMethods.VkF9);
-
-        Interop.NativeMethods.RegisterHotKey(
-            hwnd,
-            Interop.NativeMethods.HotkeyToggleInteractive,
-            Interop.NativeMethods.ModAlt | Interop.NativeMethods.ModNorepeat,
-            Interop.NativeMethods.VkOem3);
-
-        _registered = true;
+        var overlayOk = RegisterBinding(hwnd, NativeMethods.HotkeyToggleOverlay, _settings.ToggleOverlayHotkey);
+        var interactiveOk = RegisterBinding(hwnd, NativeMethods.HotkeyToggleInteractive, _settings.ToggleInteractiveHotkey);
+        _registered = overlayOk || interactiveOk;
+        return overlayOk && interactiveOk;
     }
 
     public bool TryHandleHotkeyMessage(nint hwnd, uint message, nint wParam)
     {
-        if (message != Interop.NativeMethods.WmHotkey)
+        if (message != NativeMethods.WmHotkey)
         {
             return false;
         }
@@ -55,10 +53,10 @@ public sealed class HotkeyService : IDisposable
         {
             switch (id)
             {
-                case Interop.NativeMethods.HotkeyToggleOverlay:
+                case NativeMethods.HotkeyToggleOverlay:
                     _overlayService.ToggleOverlayVisibility();
                     break;
-                case Interop.NativeMethods.HotkeyToggleInteractive:
+                case NativeMethods.HotkeyToggleInteractive:
                     _overlayService.ToggleInteractive();
                     break;
             }
@@ -69,11 +67,55 @@ public sealed class HotkeyService : IDisposable
 
     public void Dispose()
     {
-        if (_messageWindow is not null)
+        if (_messageWindow is null)
         {
-            var hwnd = Interop.Win32WindowHelper.GetHandle(_messageWindow);
-            Interop.NativeMethods.UnregisterHotKey(hwnd, Interop.NativeMethods.HotkeyToggleOverlay);
-            Interop.NativeMethods.UnregisterHotKey(hwnd, Interop.NativeMethods.HotkeyToggleInteractive);
+            return;
         }
+
+        UnregisterAll(Win32WindowHelper.GetHandle(_messageWindow));
+        _registered = false;
+    }
+
+    private static bool RegisterBinding(nint hwnd, int id, HotkeyBinding binding)
+    {
+        if (binding.VirtualKey == 0)
+        {
+            return false;
+        }
+
+        var modifiers = NativeMethods.ModNorepeat;
+        if (binding.Alt)
+        {
+            modifiers |= NativeMethods.ModAlt;
+        }
+
+        if (binding.Ctrl)
+        {
+            modifiers |= NativeMethods.ModControl;
+        }
+
+        if (binding.Shift)
+        {
+            modifiers |= NativeMethods.ModShift;
+        }
+
+        if (binding.Win)
+        {
+            modifiers |= NativeMethods.ModWin;
+        }
+
+        // Require at least one modifier for global hotkeys safety.
+        if ((modifiers & ~NativeMethods.ModNorepeat) == 0)
+        {
+            return false;
+        }
+
+        return NativeMethods.RegisterHotKey(hwnd, id, modifiers, (uint)binding.VirtualKey);
+    }
+
+    private static void UnregisterAll(nint hwnd)
+    {
+        NativeMethods.UnregisterHotKey(hwnd, NativeMethods.HotkeyToggleOverlay);
+        NativeMethods.UnregisterHotKey(hwnd, NativeMethods.HotkeyToggleInteractive);
     }
 }

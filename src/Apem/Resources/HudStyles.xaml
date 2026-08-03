@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <SolidColorBrush x:Key="HudPanelBackgroundBrush" Color="#CC101820" />
+    <SolidColorBrush x:Key="HudStatPanelBackgroundBrush" Color="#99081218" />
     <SolidColorBrush x:Key="HudAccentBrush" Color="#C8A45A" />
     <SolidColorBrush x:Key="HudTextBrush" Color="#F2F4F7" />
     <SolidColorBrush x:Key="HudMutedBrush" Color="#9AA7B5" />
@@ -16,6 +17,12 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="8" />
         <Setter Property="Padding" Value="12" />
+    </Style>
+
+    <Style x:Key="HudStatPanelStyle" TargetType="Border">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
     </Style>
 
     <Style x:Key="HudTitleStyle" TargetType="TextBlock">
@@ -33,5 +40,25 @@
     <Style x:Key="HudMutedStyle" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{StaticResource HudMutedBrush}" />
         <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <SolidColorBrush x:Key="HudStatLabelBrush" Color="#C1D2E9" />
+    <SolidColorBrush x:Key="HudStatNumberBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="HudStatShadowBrush" Color="#CC000000" />
+
+    <Style x:Key="HudStatFadeLabelStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource HudStatLabelBrush}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontFamily" Value="Segoe UI" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="HudStatFadeValueStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource HudStatNumberBrush}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontFamily" Value="Segoe UI" />
+        <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 </ResourceDictionary>

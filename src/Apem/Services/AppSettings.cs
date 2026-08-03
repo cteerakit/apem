@@ -10,19 +10,24 @@ public sealed class AppSettings
 
     public int GsiPort { get; set; } = DefaultGsiPort;
     public string GsiToken { get; set; } = string.Empty;
-    public bool ShowScoreboardPanel { get; set; } = true;
     public bool ShowPlayerPanel { get; set; } = true;
-    public bool ShowItemsPanel { get; set; } = true;
-    public bool ShowAbilitiesPanel { get; set; } = true;
-    public bool ShowTimersPanel { get; set; } = true;
-    public bool ShowDraftPanel { get; set; } = true;
+    public bool ShowBountyTimer { get; set; } = true;
+    public bool ShowPowerTimer { get; set; } = true;
+    public bool ShowWisdomTimer { get; set; } = true;
+    public bool ShowLotusTimer { get; set; } = true;
     public bool ShowBuildPanel { get; set; } = true;
     public bool OverlayVisible { get; set; }
     public bool OverlayInteractive { get; set; }
     public double OverlayOpacity { get; set; } = 0.92;
     public bool TimerSoundsEnabled { get; set; } = true;
     public bool IsTurboMode { get; set; }
+    /// <summary>How many seconds before a rune spawns its countdown widget appears.</summary>
+    public int RuneTimerLeadSeconds { get; set; } = 15;
+    public bool DebugOverlayPreview { get; set; }
     public string? SteamId { get; set; }
+
+    public HotkeyBinding ToggleOverlayHotkey { get; set; } = HotkeyBinding.DefaultToggleOverlay();
+    public HotkeyBinding ToggleInteractiveHotkey { get; set; } = HotkeyBinding.DefaultToggleInteractive();
 
     public PanelLayoutSettings PanelLayout { get; set; } = new();
 
@@ -38,7 +43,9 @@ public sealed class AppSettings
             if (File.Exists(SettingsPath))
             {
                 var json = File.ReadAllText(SettingsPath);
-                return JsonSerializer.Deserialize<AppSettings>(json) ?? CreateDefault();
+                var settings = JsonSerializer.Deserialize<AppSettings>(json) ?? CreateDefault();
+                settings.Normalize();
+                return settings;
             }
         }
         catch
@@ -51,9 +58,29 @@ public sealed class AppSettings
 
     public void Save()
     {
+        Normalize();
         Directory.CreateDirectory(SettingsDirectory);
         var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(SettingsPath, json);
+    }
+
+    public void Normalize()
+    {
+        ToggleOverlayHotkey ??= HotkeyBinding.DefaultToggleOverlay();
+        ToggleInteractiveHotkey ??= HotkeyBinding.DefaultToggleInteractive();
+        PanelLayout ??= new PanelLayoutSettings();
+
+        if (ToggleOverlayHotkey.VirtualKey == 0)
+        {
+            ToggleOverlayHotkey = HotkeyBinding.DefaultToggleOverlay();
+        }
+
+        if (ToggleInteractiveHotkey.VirtualKey == 0)
+        {
+            ToggleInteractiveHotkey = HotkeyBinding.DefaultToggleInteractive();
+        }
+
+        RuneTimerLeadSeconds = Math.Clamp(RuneTimerLeadSeconds, 5, 120);
     }
 
     private static AppSettings CreateDefault()
@@ -67,20 +94,22 @@ public sealed class AppSettings
     }
 }
 
+/// <summary>
+/// Remembered widget positions. A null coordinate means the widget has never been
+/// dragged, so the overlay places it at its default screen-edge anchor instead.
+/// </summary>
 public sealed class PanelLayoutSettings
 {
-    public double ScoreboardX { get; set; } = 24;
-    public double ScoreboardY { get; set; } = 24;
-    public double PlayerX { get; set; } = 24;
-    public double PlayerY { get; set; } = 120;
-    public double ItemsX { get; set; } = 24;
-    public double ItemsY { get; set; } = 320;
-    public double AbilitiesX { get; set; } = 24;
-    public double AbilitiesY { get; set; } = 460;
-    public double TimersX { get; set; } = 420;
-    public double TimersY { get; set; } = 24;
-    public double DraftX { get; set; } = 420;
-    public double DraftY { get; set; } = 260;
-    public double BuildX { get; set; } = 420;
-    public double BuildY { get; set; } = 520;
+    public double? PlayerX { get; set; }
+    public double? PlayerY { get; set; }
+    public double? BountyX { get; set; }
+    public double? BountyY { get; set; }
+    public double? PowerX { get; set; }
+    public double? PowerY { get; set; }
+    public double? WisdomX { get; set; }
+    public double? WisdomY { get; set; }
+    public double? LotusX { get; set; }
+    public double? LotusY { get; set; }
+    public double? BuildX { get; set; }
+    public double? BuildY { get; set; }
 }

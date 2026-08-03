@@ -35,8 +35,8 @@ public sealed class GsiConfigInstaller
         {
             "uri"               "http://127.0.0.1:{{settings.GsiPort}}/"
             "timeout"           "5.0"
-            "buffer"            "0.1"
-            "throttle"          "0.1"
+            "buffer"            "1.0"
+            "throttle"          "1.0"
             "heartbeat"         "30.0"
             "data"
             {
@@ -57,7 +57,7 @@ public sealed class GsiConfigInstaller
         }
         """;
 
-    private static List<string> FindDotaInstallPaths()
+    public static List<string> FindDotaInstallPaths()
     {
         var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 

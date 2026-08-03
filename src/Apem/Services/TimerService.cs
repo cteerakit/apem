@@ -1,102 +1,85 @@
 using Apem.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.UI.Dispatching;
 
 namespace Apem.Services;
 
-public sealed partial class TimerService : ObservableObject
+public sealed partial class TimerService : ObservableObject, IDisposable
 {
     private readonly MatchStore _store;
     private readonly AppSettings _settings;
+    private readonly TimerEntry[] _all;
+    private readonly DispatcherQueueTimer _tickTimer;
 
-    [ObservableProperty]
-    private IReadOnlyList<TimerEntry> _timers = Array.Empty<TimerEntry>();
+    private int _lastClock;
+    private DateTimeOffset _lastClockUtc;
+
+    public TimerEntry BountyRune { get; } = new();
+    public TimerEntry PowerRune { get; } = new();
+    public TimerEntry WisdomRune { get; } = new();
+    public TimerEntry LotusPool { get; } = new();
 
     [ObservableProperty]
     private string? _lastAlert;
 
-    private int? _roshanDeathClock;
     private readonly HashSet<string> _firedAlerts = new(StringComparer.Ordinal);
 
-    public TimerService(MatchStore store, AppSettings settings)
+    public TimerService(MatchStore store, AppSettings settings, DispatcherQueue dispatcherQueue)
     {
         _store = store;
         _settings = settings;
+        _all = [BountyRune, PowerRune, WisdomRune, LotusPool];
         _store.SnapshotUpdated += OnSnapshotUpdated;
-    }
 
-    public void MarkRoshanDead()
-    {
-        _roshanDeathClock = _store.Snapshot.ClockTimeSeconds;
-        RefreshTimers();
-    }
+        _tickTimer = dispatcherQueue.CreateTimer();
+        _tickTimer.Interval = TimeSpan.FromSeconds(1);
+        _tickTimer.Tick += (_, _) => RefreshTimers(CurrentClock());
+        _tickTimer.Start();
 
-    public void ClearRoshan()
-    {
-        _roshanDeathClock = null;
-        RefreshTimers();
+        RefreshTimers(_store.Snapshot.ClockTimeSeconds);
     }
 
     private void OnSnapshotUpdated(MatchSnapshot snapshot)
     {
-        RefreshTimers(snapshot);
+        _lastClock = snapshot.ClockTimeSeconds;
+        _lastClockUtc = DateTimeOffset.UtcNow;
+        RefreshTimers(_lastClock);
     }
 
-    private void RefreshTimers() => RefreshTimers(_store.Snapshot);
-
-    private void RefreshTimers(MatchSnapshot snapshot)
+    private int CurrentClock()
     {
-        var clock = snapshot.ClockTimeSeconds;
-        var turbo = _settings.IsTurboMode;
-        var entries = new List<TimerEntry>
+        if (_lastClockUtc == default)
         {
-            BuildSpawnTimer("Bounty Rune", ObjectiveTimerRules.NextBountyRune(clock, turbo), clock),
-            BuildSpawnTimer("Power Rune", ObjectiveTimerRules.NextPowerRune(clock, turbo), clock),
-            BuildSpawnTimer("Wisdom Rune", ObjectiveTimerRules.NextWisdomRune(clock), clock),
-            BuildSpawnTimer("Lotus Pool", ObjectiveTimerRules.NextLotus(clock), clock),
-        };
-
-        if (_roshanDeathClock is int deathClock)
-        {
-            var minRespawn = deathClock + ObjectiveTimerRules.RoshanMinRespawnSeconds;
-            var maxRespawn = deathClock + ObjectiveTimerRules.RoshanMaxRespawnSeconds;
-            entries.Add(new TimerEntry
-            {
-                Name = "Roshan",
-                SecondsUntil = minRespawn - clock,
-                WindowEndSeconds = maxRespawn - clock,
-                IsManual = true,
-            });
-        }
-        else
-        {
-            entries.Add(new TimerEntry
-            {
-                Name = "Roshan",
-                Label = "Press Mark when Rosh dies",
-                IsManual = true,
-            });
+            return _lastClock;
         }
 
-        Timers = entries;
-        CheckAlerts(entries);
+        var elapsed = (int)(DateTimeOffset.UtcNow - _lastClockUtc).TotalSeconds;
+        return _lastClock + Math.Max(0, elapsed);
     }
 
-    private static TimerEntry BuildSpawnTimer(string name, int spawnAt, int clock) =>
-        new()
-        {
-            Name = name,
-            SecondsUntil = spawnAt - clock,
-            SpawnAtClock = spawnAt,
-        };
+    private void RefreshTimers(int clock)
+    {
+        var turbo = _settings.IsTurboMode;
 
-    private void CheckAlerts(IReadOnlyList<TimerEntry> entries)
+        ApplySpawn(BountyRune, "Bounty Rune", ObjectiveTimerRules.NextBountyRune(clock, turbo), clock);
+        ApplySpawn(PowerRune, "Power Rune", ObjectiveTimerRules.NextPowerRune(clock, turbo), clock);
+        ApplySpawn(WisdomRune, "Wisdom Rune", ObjectiveTimerRules.NextWisdomRune(clock), clock);
+        ApplySpawn(LotusPool, "Lotus Pool", ObjectiveTimerRules.NextLotus(clock), clock);
+
+        CheckAlerts();
+    }
+
+    private static void ApplySpawn(TimerEntry entry, string name, int spawnAt, int clock) =>
+        entry.ApplySpawn(name, spawnAt - clock, spawnAt);
+
+    private void CheckAlerts()
     {
         if (!_settings.TimerSoundsEnabled)
         {
             return;
         }
 
-        foreach (var entry in entries)
+        foreach (var entry in _all)
         {
             if (entry.SecondsUntil is not int seconds || seconds > 5 || seconds < 0)
             {
@@ -110,4 +93,6 @@ public sealed partial class TimerService : ObservableObject
             }
         }
     }
+
+    public void Dispose() => _tickTimer.Stop();
 }
