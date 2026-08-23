@@ -22,6 +22,7 @@ internal static class MockMatchData
         HeroName = "npc_dota_hero_juggernaut",
         HeroLevel = 18,
         HeroAlive = true,
+        Players = CreatePlayers(),
     };
 
     public static IReadOnlyList<BuildSuggestionItem> CreateBuildSuggestions() =>

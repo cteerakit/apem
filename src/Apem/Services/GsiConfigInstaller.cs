@@ -43,6 +43,7 @@ public sealed class GsiConfigInstaller
                 "provider"      "1"
                 "map"           "1"
                 "player"        "1"
+                "allplayers"    "1"
                 "hero"          "1"
                 "abilities"     "1"
                 "items"         "1"

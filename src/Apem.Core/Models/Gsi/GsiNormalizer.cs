@@ -37,8 +37,78 @@ public static class GsiNormalizer
         snapshot.Items = NormalizeItems(payload.Items);
         snapshot.Abilities = NormalizeAbilities(payload.Abilities);
         snapshot.Draft = NormalizeDraft(payload.Draft, snapshot.TeamName);
+        snapshot.Players = NormalizePlayers(payload);
 
         return snapshot;
+    }
+
+    internal static IReadOnlyList<MatchPlayer> NormalizePlayers(GsiPayload payload)
+    {
+        if (payload.AllPlayers is { Count: > 0 })
+        {
+            return payload.AllPlayers.Values
+                .Select(player => ToMatchPlayer(player, player.Hero))
+                .OrderBy(static player => TeamSortOrder(player.TeamName))
+                .ThenBy(static player => player.TeamSlot)
+                .ThenBy(static player => player.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        if (payload.Player is null)
+        {
+            return Array.Empty<MatchPlayer>();
+        }
+
+        return [ToMatchPlayer(payload.Player, payload.Hero ?? payload.Player.Hero)];
+    }
+
+    private static MatchPlayer ToMatchPlayer(GsiPlayer player, GsiHero? hero) =>
+        new()
+        {
+            SteamId = player.SteamId ?? string.Empty,
+            Name = player.Name ?? string.Empty,
+            TeamName = ResolveTeamName(player),
+            TeamSlot = player.TeamSlot,
+            HeroName = hero?.Name ?? string.Empty,
+            HeroLevel = hero?.Level ?? 0,
+            Kills = player.Kills,
+            Deaths = player.Deaths,
+            Assists = player.Assists,
+            LastHits = player.LastHits,
+            Denies = player.Denies,
+            Gpm = player.Gpm,
+            Xpm = player.Xpm,
+            Gold = player.Gold,
+        };
+
+    private static string ResolveTeamName(GsiPlayer player)
+    {
+        if (!string.IsNullOrWhiteSpace(player.TeamName))
+        {
+            return player.TeamName;
+        }
+
+        return player.Team switch
+        {
+            2 => "radiant",
+            3 => "dire",
+            _ => string.Empty,
+        };
+    }
+
+    private static int TeamSortOrder(string teamName)
+    {
+        if (teamName.Contains("radiant", StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
+        if (teamName.Contains("dire", StringComparison.OrdinalIgnoreCase))
+        {
+            return 1;
+        }
+
+        return 2;
     }
 
     private static IReadOnlyList<SlotSnapshot> NormalizeItems(Dictionary<string, GsiItemSlot>? items)

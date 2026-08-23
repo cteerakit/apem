@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Apem.Models.Gsi;
@@ -12,6 +13,9 @@ public sealed class GsiPayload
 
     [JsonPropertyName("player")]
     public GsiPlayer? Player { get; set; }
+
+    [JsonPropertyName("allplayers")]
+    public Dictionary<string, GsiPlayer>? AllPlayers { get; set; }
 
     [JsonPropertyName("hero")]
     public GsiHero? Hero { get; set; }
@@ -111,6 +115,51 @@ public sealed class GsiPlayer
 
     [JsonPropertyName("team_name")]
     public string? TeamName { get; set; }
+
+    [JsonPropertyName("team")]
+    [JsonConverter(typeof(GsiTeamJsonConverter))]
+    public int Team { get; set; }
+
+    [JsonPropertyName("team_slot")]
+    public int TeamSlot { get; set; }
+
+    [JsonPropertyName("hero")]
+    public GsiHero? Hero { get; set; }
+}
+
+internal sealed class GsiTeamJsonConverter : JsonConverter<int>
+{
+    public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Number && reader.TryGetInt32(out var teamNumber))
+        {
+            return teamNumber;
+        }
+
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            var team = reader.GetString();
+            if (int.TryParse(team, out teamNumber))
+            {
+                return teamNumber;
+            }
+
+            if (team?.Contains("radiant", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return 2;
+            }
+
+            if (team?.Contains("dire", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return 3;
+            }
+        }
+
+        return 0;
+    }
+
+    public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options) =>
+        writer.WriteNumberValue(value);
 }
 
 public sealed class GsiHero

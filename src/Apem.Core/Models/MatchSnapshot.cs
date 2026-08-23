@@ -30,6 +30,7 @@ public sealed class MatchSnapshot
     public bool HeroAlive { get; set; }
     public IReadOnlyList<SlotSnapshot> Items { get; set; } = Array.Empty<SlotSnapshot>();
     public IReadOnlyList<SlotSnapshot> Abilities { get; set; } = Array.Empty<SlotSnapshot>();
+    public IReadOnlyList<MatchPlayer> Players { get; set; } = Array.Empty<MatchPlayer>();
     public DraftSnapshot Draft { get; set; } = new();
 
     public string FormattedClock => Gsi.GsiNormalizer.FormatClock(ClockTimeSeconds);

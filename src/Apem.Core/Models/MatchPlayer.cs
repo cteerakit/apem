@@ -2,8 +2,10 @@ namespace Apem.Models;
 
 public sealed class MatchPlayer
 {
+    public string SteamId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string TeamName { get; set; } = string.Empty;
+    public int TeamSlot { get; set; }
     public string HeroName { get; set; } = string.Empty;
     public int HeroLevel { get; set; }
     public int Kills { get; set; }
@@ -15,9 +17,13 @@ public sealed class MatchPlayer
     public int Xpm { get; set; }
     public int Gold { get; set; }
 
+    public string Note { get; set; } = string.Empty;
+
     public string Kda => $"{Kills}/{Deaths}/{Assists}";
     public string LastHitsDenies => $"{LastHits}/{Denies}";
     public string DisplayHeroName => FormatHeroName(HeroName);
+    public string NoteKey => string.IsNullOrWhiteSpace(SteamId) ? Name : SteamId;
+    public string NoteButtonLabel => string.IsNullOrWhiteSpace(Note) ? "Add note" : "Edit note";
 
     private static string FormatHeroName(string heroName)
     {

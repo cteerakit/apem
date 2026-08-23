@@ -25,6 +25,7 @@ public sealed class AppSettings
     public int RuneTimerLeadSeconds { get; set; } = 15;
     public bool DebugOverlayPreview { get; set; }
     public string? SteamId { get; set; }
+    public Dictionary<string, string> PlayerNotes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public HotkeyBinding ToggleOverlayHotkey { get; set; } = HotkeyBinding.DefaultToggleOverlay();
     public HotkeyBinding ToggleInteractiveHotkey { get; set; } = HotkeyBinding.DefaultToggleInteractive();
@@ -69,6 +70,9 @@ public sealed class AppSettings
         ToggleOverlayHotkey ??= HotkeyBinding.DefaultToggleOverlay();
         ToggleInteractiveHotkey ??= HotkeyBinding.DefaultToggleInteractive();
         PanelLayout ??= new PanelLayoutSettings();
+        PlayerNotes = new Dictionary<string, string>(
+            PlayerNotes ?? new Dictionary<string, string>(),
+            StringComparer.OrdinalIgnoreCase);
 
         if (ToggleOverlayHotkey.VirtualKey == 0)
         {

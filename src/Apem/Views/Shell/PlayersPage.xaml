@@ -18,6 +18,36 @@
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         </Style>
+        <DataTemplate x:Key="PlayerRowTemplate">
+            <Grid ColumnSpacing="8" Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="40" />
+                    <ColumnDefinition Width="56" />
+                    <ColumnDefinition Width="64" />
+                    <ColumnDefinition Width="48" />
+                    <ColumnDefinition Width="48" />
+                    <ColumnDefinition Width="56" />
+                    <ColumnDefinition Width="88" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding Name}" />
+                <TextBlock Grid.Column="1" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding DisplayHeroName}" />
+                <TextBlock Grid.Column="2" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding HeroLevel}" />
+                <TextBlock Grid.Column="3" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding Kda}" />
+                <TextBlock Grid.Column="4" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding LastHitsDenies}" />
+                <TextBlock Grid.Column="5" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding Gpm}" />
+                <TextBlock Grid.Column="6" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding Xpm}" />
+                <TextBlock Grid.Column="7" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding Gold}" />
+                <Button
+                    Grid.Column="8"
+                    Padding="8,4"
+                    MinWidth="80"
+                    Click="OnAddNoteClick"
+                    Content="{Binding NoteButtonLabel}"
+                    ToolTipService.ToolTip="{Binding Note}" />
+            </Grid>
+        </DataTemplate>
     </Page.Resources>
 
     <Grid x:Name="LayoutRoot">
@@ -35,8 +65,9 @@
                 <StackPanel Spacing="8">
                     <TextBlock Text="Players" Style="{StaticResource TitleTextBlockStyle}" />
                     <TextBlock
+                        x:Name="SubtitleText"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="Mock roster for the current match."
+                        Text="Waiting for Dota 2."
                         TextWrapping="WrapWholeWords" />
                 </StackPanel>
 
@@ -58,6 +89,7 @@
                                 <ColumnDefinition Width="48" />
                                 <ColumnDefinition Width="48" />
                                 <ColumnDefinition Width="56" />
+                                <ColumnDefinition Width="88" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Player" />
                             <TextBlock Grid.Column="1" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Hero" />
@@ -67,33 +99,9 @@
                             <TextBlock Grid.Column="5" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="GPM" />
                             <TextBlock Grid.Column="6" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="XPM" />
                             <TextBlock Grid.Column="7" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Gold" />
+                            <TextBlock Grid.Column="8" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Note" />
                         </Grid>
-                        <ItemsControl x:Name="RadiantPlayersList">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid ColumnSpacing="8" Margin="0,0,0,8">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="2*" />
-                                            <ColumnDefinition Width="2*" />
-                                            <ColumnDefinition Width="40" />
-                                            <ColumnDefinition Width="56" />
-                                            <ColumnDefinition Width="64" />
-                                            <ColumnDefinition Width="48" />
-                                            <ColumnDefinition Width="48" />
-                                            <ColumnDefinition Width="56" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding Name}" />
-                                        <TextBlock Grid.Column="1" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding DisplayHeroName}" />
-                                        <TextBlock Grid.Column="2" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding HeroLevel}" />
-                                        <TextBlock Grid.Column="3" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding Kda}" />
-                                        <TextBlock Grid.Column="4" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding LastHitsDenies}" />
-                                        <TextBlock Grid.Column="5" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding Gpm}" />
-                                        <TextBlock Grid.Column="6" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding Xpm}" />
-                                        <TextBlock Grid.Column="7" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding Gold}" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <ItemsControl x:Name="RadiantPlayersList" ItemTemplate="{StaticResource PlayerRowTemplate}" />
                     </StackPanel>
                 </Border>
 
@@ -115,6 +123,7 @@
                                 <ColumnDefinition Width="48" />
                                 <ColumnDefinition Width="48" />
                                 <ColumnDefinition Width="56" />
+                                <ColumnDefinition Width="88" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Player" />
                             <TextBlock Grid.Column="1" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Hero" />
@@ -124,33 +133,9 @@
                             <TextBlock Grid.Column="5" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="GPM" />
                             <TextBlock Grid.Column="6" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="XPM" />
                             <TextBlock Grid.Column="7" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Gold" />
+                            <TextBlock Grid.Column="8" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Note" />
                         </Grid>
-                        <ItemsControl x:Name="DirePlayersList">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid ColumnSpacing="8" Margin="0,0,0,8">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="2*" />
-                                            <ColumnDefinition Width="2*" />
-                                            <ColumnDefinition Width="40" />
-                                            <ColumnDefinition Width="56" />
-                                            <ColumnDefinition Width="64" />
-                                            <ColumnDefinition Width="48" />
-                                            <ColumnDefinition Width="48" />
-                                            <ColumnDefinition Width="56" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding Name}" />
-                                        <TextBlock Grid.Column="1" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding DisplayHeroName}" />
-                                        <TextBlock Grid.Column="2" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding HeroLevel}" />
-                                        <TextBlock Grid.Column="3" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding Kda}" />
-                                        <TextBlock Grid.Column="4" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding LastHitsDenies}" />
-                                        <TextBlock Grid.Column="5" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding Gpm}" />
-                                        <TextBlock Grid.Column="6" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding Xpm}" />
-                                        <TextBlock Grid.Column="7" Style="{StaticResource ScoreboardCellTextStyle}" Text="{Binding Gold}" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <ItemsControl x:Name="DirePlayersList" ItemTemplate="{StaticResource PlayerRowTemplate}" />
                     </StackPanel>
                 </Border>
             </StackPanel>
