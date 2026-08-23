@@ -28,6 +28,11 @@
                     <FontIcon Glyph="&#xE9D2;" />
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
+            <NavigationViewItem Content="Players" Tag="players">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE77B;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
             <NavigationViewItem Content="Settings" Tag="settings">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xE713;" />

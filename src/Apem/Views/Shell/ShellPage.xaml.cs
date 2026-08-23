@@ -31,6 +31,7 @@ public sealed partial class ShellPage : Page
         var pageType = tag switch
         {
             "status" => typeof(StatusPage),
+            "players" => typeof(PlayersPage),
             "settings" => typeof(SettingsPage),
             "shortcuts" => typeof(ShortcutsPage),
             "developer" => typeof(DeveloperPage),
