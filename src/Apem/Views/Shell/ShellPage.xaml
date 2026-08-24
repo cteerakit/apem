@@ -9,28 +9,38 @@
 
     <NavigationView
         x:Name="NavView"
-        IsBackButtonVisible="Collapsed"
+        IsBackButtonVisible="Visible"
+        IsBackEnabled="False"
         IsSettingsVisible="False"
         PaneDisplayMode="Auto"
         OpenPaneLength="220"
         CompactPaneLength="48"
         CompactModeThresholdWidth="0"
         ExpandedModeThresholdWidth="1008"
-        SelectionChanged="NavView_SelectionChanged">
+        BackRequested="NavView_BackRequested"
+        SelectionChanged="NavView_SelectionChanged"
+        DisplayModeChanged="NavView_DisplayModeChanged"
+        PaneOpened="NavView_PaneOpened"
+        PaneClosed="NavView_PaneClosed">
         <NavigationView.MenuItems>
-            <NavigationViewItem Content="Setup" Tag="setup">
-                <NavigationViewItem.Icon>
-                    <FontIcon Glyph="&#xE8F1;" />
-                </NavigationViewItem.Icon>
-            </NavigationViewItem>
             <NavigationViewItem Content="Status" Tag="status">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xE9D2;" />
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
-            <NavigationViewItem Content="Players" Tag="players">
+            <NavigationViewItem Content="Match" Tag="match">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE7FC;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+            <NavigationViewItem Content="Player" Tag="player">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xE77B;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+            <NavigationViewItem Content="Overlay" Tag="overlay">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE7F4;" />
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
             <NavigationViewItem Content="Settings" Tag="settings">
@@ -43,12 +53,40 @@
                     <FontIcon Glyph="&#xE765;" />
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
-            <NavigationViewItem Content="Developer" Tag="developer">
+            <NavigationViewItem Content="About" Tag="about">
                 <NavigationViewItem.Icon>
-                    <FontIcon Glyph="&#xE943;" />
+                    <FontIcon Glyph="&#xE946;" />
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
         </NavigationView.MenuItems>
+
+        <NavigationView.PaneFooter>
+            <Border
+                Padding="16,12"
+                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="0,1,0,0">
+                <StackPanel
+                    x:Name="BriefStatusPanel"
+                    Orientation="Horizontal"
+                    Spacing="10"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Left"
+                    ToolTipService.ToolTip="{x:Bind ViewModel.ConnectionStatus, Mode=OneWay}">
+                    <Ellipse
+                        Width="10"
+                        Height="10"
+                        VerticalAlignment="Center"
+                        Fill="{x:Bind ViewModel.ConnectionDotBrush, Mode=OneWay}" />
+                    <TextBlock
+                        x:Name="BriefStatusLabel"
+                        VerticalAlignment="Center"
+                        FontSize="12"
+                        Text="{x:Bind ViewModel.BriefConnectionLabel, Mode=OneWay}"
+                        TextTrimming="CharacterEllipsis"
+                        MaxWidth="140" />
+                </StackPanel>
+            </Border>
+        </NavigationView.PaneFooter>
 
         <Frame x:Name="ContentFrame" />
     </NavigationView>

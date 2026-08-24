@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using Apem.Models;
 
 namespace Apem.Services;
 
@@ -25,7 +26,9 @@ public sealed class AppSettings
     public int RuneTimerLeadSeconds { get; set; } = 15;
     public bool DebugOverlayPreview { get; set; }
     public string? SteamId { get; set; }
-    public Dictionary<string, string> PlayerNotes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Steam Web API key used for roster avatars (GetPlayerSummaries).</summary>
+    public string SteamApiKey { get; set; } = string.Empty;
+    public Dictionary<string, PlayerNote> PlayerNotes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public HotkeyBinding ToggleOverlayHotkey { get; set; } = HotkeyBinding.DefaultToggleOverlay();
     public HotkeyBinding ToggleInteractiveHotkey { get; set; } = HotkeyBinding.DefaultToggleInteractive();
@@ -70,9 +73,7 @@ public sealed class AppSettings
         ToggleOverlayHotkey ??= HotkeyBinding.DefaultToggleOverlay();
         ToggleInteractiveHotkey ??= HotkeyBinding.DefaultToggleInteractive();
         PanelLayout ??= new PanelLayoutSettings();
-        PlayerNotes = new Dictionary<string, string>(
-            PlayerNotes ?? new Dictionary<string, string>(),
-            StringComparer.OrdinalIgnoreCase);
+        PlayerNotes = NormalizeNotes(PlayerNotes);
 
         if (ToggleOverlayHotkey.VirtualKey == 0)
         {
@@ -85,6 +86,36 @@ public sealed class AppSettings
         }
 
         RuneTimerLeadSeconds = Math.Clamp(RuneTimerLeadSeconds, 5, 120);
+        SteamApiKey = SteamApiKey?.Trim() ?? string.Empty;
+    }
+
+    private static Dictionary<string, PlayerNote> NormalizeNotes(Dictionary<string, PlayerNote>? notes)
+    {
+        var normalized = new Dictionary<string, PlayerNote>(StringComparer.OrdinalIgnoreCase);
+        if (notes is null)
+        {
+            return normalized;
+        }
+
+        foreach (var (key, value) in notes)
+        {
+            var note = value ?? new PlayerNote();
+            note.FillIdentityFromKey(key);
+            if (!note.HasSavedData)
+            {
+                continue;
+            }
+
+            var storageKey = string.IsNullOrWhiteSpace(note.StorageKey) ? key.Trim() : note.StorageKey;
+            if (string.IsNullOrWhiteSpace(storageKey))
+            {
+                continue;
+            }
+
+            normalized[storageKey] = note;
+        }
+
+        return normalized;
     }
 
     private static AppSettings CreateDefault()

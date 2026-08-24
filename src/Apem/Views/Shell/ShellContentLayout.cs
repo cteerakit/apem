@@ -9,9 +9,10 @@ internal static class ShellContentLayout
     public const double HorizontalPadding = 64;
 
     /// <summary>
-    /// Keep every shell page on the same column width: grow/shrink together between min and max.
+    /// Keep shell pages on a shared column width: grow/shrink between min and max.
+    /// Pass <see cref="double.PositiveInfinity"/> to use the full viewport width.
     /// </summary>
-    public static void Attach(FrameworkElement viewport, FrameworkElement column)
+    public static void Attach(FrameworkElement viewport, FrameworkElement column, double maxWidth = MaxWidth)
     {
         void Update()
         {
@@ -21,7 +22,29 @@ internal static class ShellContentLayout
                 return;
             }
 
-            column.Width = Math.Clamp(available, MinWidth, MaxWidth);
+            column.Width = Math.Clamp(available, MinWidth, maxWidth);
+        }
+
+        viewport.SizeChanged += (_, _) => Update();
+        column.Loaded += (_, _) => Update();
+    }
+
+    /// <summary>
+    /// Wide tables: fill the viewport when content is narrow, but allow the column to
+    /// grow with content so a parent <see cref="ScrollViewer"/> can scroll horizontally.
+    /// </summary>
+    public static void AttachExpanding(FrameworkElement viewport, FrameworkElement column)
+    {
+        void Update()
+        {
+            var available = viewport.ActualWidth - HorizontalPadding;
+            if (available <= 0)
+            {
+                return;
+            }
+
+            column.ClearValue(FrameworkElement.WidthProperty);
+            column.MinWidth = Math.Max(MinWidth, available);
         }
 
         viewport.SizeChanged += (_, _) => Update();

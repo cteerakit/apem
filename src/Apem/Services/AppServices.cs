@@ -7,6 +7,7 @@ public static class AppServices
     public static GsiListenerService GsiListener { get; private set; } = null!;
     public static GsiConfigInstaller GsiInstaller { get; private set; } = new();
     public static OpenDotaService OpenDota { get; private set; } = new();
+    public static SteamWebApiService SteamApi { get; private set; } = new();
     public static TimerService TimerService { get; private set; } = null!;
     public static OverlayWindowService OverlayService { get; private set; } = null!;
     public static HotkeyService HotkeyService { get; private set; } = null!;
@@ -15,7 +16,13 @@ public static class AppServices
     public static void Initialize(Microsoft.UI.Dispatching.DispatcherQueue dispatcherQueue)
     {
         Settings = AppSettings.Load();
+        OpenDota = new OpenDotaService();
+        SteamApi = new SteamWebApiService();
         MatchStore = new MatchStore();
+        MatchStore.Configure(
+            dispatcherQueue,
+            (matchId, accountId, cancellationToken) =>
+                OpenDota.GetMatchRosterAsync(matchId, accountId, cancellationToken));
         HudFonts = new HudFontService();
         HudFonts.Initialize();
         GsiListener = new GsiListenerService(MatchStore, Settings);

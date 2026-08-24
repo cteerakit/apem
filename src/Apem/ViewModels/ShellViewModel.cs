@@ -2,6 +2,9 @@ using Apem.Models;
 using Apem.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.UI;
+using Microsoft.UI.Xaml.Media;
+using Windows.UI;
 
 namespace Apem.ViewModels;
 
@@ -20,6 +23,9 @@ public sealed partial class ShellViewModel : ObservableObject
 
     [ObservableProperty]
     private string _connectionStatus = "Waiting for Dota 2";
+
+    [ObservableProperty]
+    private string _briefConnectionLabel = "Waiting";
 
     [ObservableProperty]
     private string _lastUpdate = "—";
@@ -69,6 +75,8 @@ public sealed partial class ShellViewModel : ObservableObject
     [ObservableProperty]
     private string _panelLayoutStatusMessage = string.Empty;
 
+    public SolidColorBrush ConnectionDotBrush { get; } = new(Colors.Gray);
+
     public HotkeyBinding EditingToggleOverlay { get; } = HotkeyBinding.DefaultToggleOverlay();
     public HotkeyBinding EditingToggleInteractive { get; } = HotkeyBinding.DefaultToggleInteractive();
 
@@ -91,9 +99,12 @@ public sealed partial class ShellViewModel : ObservableObject
         AppServices.GsiListener.StatusChanged += status => GsiStatus = status;
         AppServices.MatchStore.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName is nameof(MatchStore.ConnectionStatus) or null)
+            if (e.PropertyName is nameof(MatchStore.ConnectionStatus)
+                or nameof(MatchStore.IsGsiConnected)
+                or nameof(MatchStore.IsDebugPreview)
+                or null)
             {
-                ConnectionStatus = AppServices.MatchStore.ConnectionStatus;
+                RefreshBriefConnectionStatus();
             }
 
             if (e.PropertyName is nameof(MatchStore.LastPayloadUtc) or null)
@@ -105,6 +116,48 @@ public sealed partial class ShellViewModel : ObservableObject
         var install = AppServices.EnsureGsiConfigInstalled();
         GsiConfigInstalled = install.Success;
         InstallMessage = install.Message;
+        RefreshBriefConnectionStatus();
+    }
+
+    private void RefreshBriefConnectionStatus()
+    {
+        var store = AppServices.MatchStore;
+        ConnectionStatus = store.ConnectionStatus;
+
+        if (store.IsDebugPreview)
+        {
+            BriefConnectionLabel = "Debug";
+            SetDotColor(Color.FromArgb(255, 59, 130, 246));
+            return;
+        }
+
+        if (store.IsGsiConnected
+            && store.ConnectionStatus.Contains("Live", StringComparison.OrdinalIgnoreCase))
+        {
+            BriefConnectionLabel = "Live";
+            SetDotColor(Color.FromArgb(255, 22, 163, 74));
+            return;
+        }
+
+        if (store.IsGsiConnected)
+        {
+            BriefConnectionLabel = "Connected";
+            SetDotColor(Color.FromArgb(255, 202, 138, 4));
+            return;
+        }
+
+        BriefConnectionLabel = "Waiting";
+        SetDotColor(Color.FromArgb(255, 156, 163, 175));
+    }
+
+    private void SetDotColor(Color color)
+    {
+        if (ConnectionDotBrush.Color == color)
+        {
+            return;
+        }
+
+        ConnectionDotBrush.Color = color;
     }
 
     public void ReloadHotkeysFromSettings()

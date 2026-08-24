@@ -24,7 +24,7 @@
                     <TextBlock Text="Settings" Style="{StaticResource TitleTextBlockStyle}" />
                     <TextBlock
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="Choose which overlay widgets stay on screen and how the overlay behaves."
+                        Text="API keys and player-note backup."
                         TextWrapping="WrapWholeWords" />
                 </StackPanel>
 
@@ -34,69 +34,54 @@
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="12">
-                    <StackPanel Spacing="16">
-                        <TextBlock Text="Overlay widgets" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Steam Web API" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Used to load roster avatars on the Match page. Get a key from steamcommunity.com/dev/apikey."
+                            TextWrapping="WrapWholeWords" />
+                        <PasswordBox
+                            x:Name="SteamApiKeyBox"
+                            PasswordChanged="OnSteamApiKeyChanged"
+                            PasswordRevealMode="Peek" />
+                        <TextBlock
+                            x:Name="SteamApiKeyStatus"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                </Border>
 
-                        <StackPanel Spacing="4">
-                            <ToggleSwitch x:Name="PlayerToggle" Header="GPM / XPM" />
-                            <TextBlock
-                                Margin="0,0,0,4"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Your GPM and XPM in the same style as the in-game HUD strip."
-                                TextWrapping="WrapWholeWords" />
-                        </StackPanel>
-
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="Timers" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                            <TextBlock
-                                Margin="0,0,0,4"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Runes show a countdown shortly before they spawn."
-                                TextWrapping="WrapWholeWords" />
-                            <NumberBox
-                                x:Name="RuneLeadNumberBox"
-                                Header="Rune countdown lead time (seconds)"
-                                Minimum="5"
-                                Maximum="120"
-                                SpinButtonPlacementMode="Inline"
-                                SmallChange="1"
-                                LargeChange="5" />
-                            <TextBlock
-                                Margin="0,0,0,4"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="How many seconds before a rune spawns its countdown widget appears."
-                                TextWrapping="WrapWholeWords" />
-                            <ToggleSwitch x:Name="BountyTimerToggle" Header="Bounty rune" />
-                            <ToggleSwitch x:Name="PowerTimerToggle" Header="Power rune" />
-                            <ToggleSwitch x:Name="WisdomTimerToggle" Header="Wisdom rune" />
-                            <ToggleSwitch x:Name="LotusTimerToggle" Header="Lotus pool" />
-                        </StackPanel>
-
-                        <Slider
-                            x:Name="OpacitySlider"
-                            Header="Overlay opacity"
-                            Maximum="1"
-                            Minimum="0.4"
-                            StepFrequency="0.05" />
-                        <ToggleSwitch x:Name="TurboToggle" Header="Turbo mode timers" />
-
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="Widget positions" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                            <TextBlock
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Moves every widget back to its default spot: rune countdowns along the right edge, GPM/XPM on the left."
-                                TextWrapping="WrapWholeWords" />
+                <Border
+                    Padding="20"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Notes" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Export a JSON backup of player notes, or import one from another PC. Live match notes are matched by Steam ID, not player name."
+                            TextWrapping="WrapWholeWords" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
                             <Button
-                                x:Name="ResetPositionsButton"
-                                Margin="0,4,0,0"
-                                Content="Reset widget positions"
-                                Click="OnResetPositionsClick" />
-                            <TextBlock
-                                x:Name="ResetPositionsStatus"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                TextWrapping="WrapWholeWords"
-                                Visibility="Collapsed" />
+                                x:Name="ViewNotesButton"
+                                Content="View notes"
+                                Click="OnViewNotesClick" />
+                            <Button
+                                x:Name="ImportNotesButton"
+                                Content="Import notes"
+                                Click="OnImportNotesClick" />
+                            <Button
+                                x:Name="ExportNotesButton"
+                                Content="Export notes"
+                                Click="OnExportNotesClick" />
                         </StackPanel>
+                        <TextBlock
+                            x:Name="NotesTransferStatus"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            TextWrapping="WrapWholeWords"
+                            Visibility="Collapsed" />
                     </StackPanel>
                 </Border>
             </StackPanel>

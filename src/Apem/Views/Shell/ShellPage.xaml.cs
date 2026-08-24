@@ -1,5 +1,7 @@
 using Apem.ViewModels;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Navigation;
 
 namespace Apem.Views.Shell;
 
@@ -11,14 +13,43 @@ public sealed partial class ShellPage : Page
     {
         InitializeComponent();
         Loaded += OnLoaded;
+        ContentFrame.Navigated += ContentFrame_Navigated;
     }
 
-    private void OnLoaded(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    private void OnLoaded(object sender, RoutedEventArgs e)
     {
+        UpdateBriefStatusChrome();
         if (NavView.SelectedItem is null && NavView.MenuItems.Count > 0)
         {
             NavView.SelectedItem = NavView.MenuItems[0];
         }
+    }
+
+    private void ContentFrame_Navigated(object sender, NavigationEventArgs e)
+    {
+        NavView.IsBackEnabled = ContentFrame.CanGoBack;
+    }
+
+    private void NavView_BackRequested(NavigationView sender, NavigationViewBackRequestedEventArgs args)
+    {
+        if (ContentFrame.CanGoBack)
+        {
+            ContentFrame.GoBack();
+        }
+    }
+
+    private void NavView_DisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args) =>
+        UpdateBriefStatusChrome();
+
+    private void NavView_PaneOpened(NavigationView sender, object args) => UpdateBriefStatusChrome();
+
+    private void NavView_PaneClosed(NavigationView sender, object args) => UpdateBriefStatusChrome();
+
+    private void UpdateBriefStatusChrome()
+    {
+        var showLabel = NavView.IsPaneOpen || NavView.DisplayMode == NavigationViewDisplayMode.Expanded;
+        BriefStatusLabel.Visibility = showLabel ? Visibility.Visible : Visibility.Collapsed;
+        BriefStatusPanel.HorizontalAlignment = showLabel ? HorizontalAlignment.Left : HorizontalAlignment.Center;
     }
 
     private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -31,13 +62,17 @@ public sealed partial class ShellPage : Page
         var pageType = tag switch
         {
             "status" => typeof(StatusPage),
-            "players" => typeof(PlayersPage),
+            "match" => typeof(MatchPage),
+            "player" => typeof(PlayerPage),
+            "overlay" => typeof(OverlayPage),
             "settings" => typeof(SettingsPage),
             "shortcuts" => typeof(ShortcutsPage),
-            "developer" => typeof(DeveloperPage),
-            _ => typeof(SetupPage),
+            "about" => typeof(AboutPage),
+            _ => typeof(StatusPage),
         };
 
         ContentFrame.Navigate(pageType, ViewModel);
+        ContentFrame.BackStack.Clear();
+        NavView.IsBackEnabled = false;
     }
 }

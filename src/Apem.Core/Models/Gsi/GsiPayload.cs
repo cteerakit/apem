@@ -11,19 +11,30 @@ public sealed class GsiPayload
     [JsonPropertyName("map")]
     public GsiMap? Map { get; set; }
 
+    /// <summary>
+    /// Playing: a single player object. Spectating: team2/team3 maps of player0–player9.
+    /// </summary>
     [JsonPropertyName("player")]
-    public GsiPlayer? Player { get; set; }
+    [JsonConverter(typeof(GsiPlayerNodeJsonConverter))]
+    public GsiPlayerNode? Player { get; set; }
 
     [JsonPropertyName("allplayers")]
+    [JsonConverter(typeof(GsiAllPlayersJsonConverter))]
     public Dictionary<string, GsiPlayer>? AllPlayers { get; set; }
 
+    /// <summary>
+    /// Playing: a single hero object. Spectating: team2/team3 maps of player0–player9.
+    /// </summary>
     [JsonPropertyName("hero")]
-    public GsiHero? Hero { get; set; }
+    [JsonConverter(typeof(GsiHeroNodeJsonConverter))]
+    public GsiHeroNode? Hero { get; set; }
 
     [JsonPropertyName("items")]
+    [JsonConverter(typeof(GsiLocalDictionaryJsonConverter<GsiItemSlot>))]
     public Dictionary<string, GsiItemSlot>? Items { get; set; }
 
     [JsonPropertyName("abilities")]
+    [JsonConverter(typeof(GsiLocalDictionaryJsonConverter<GsiAbilitySlot>))]
     public Dictionary<string, GsiAbilitySlot>? Abilities { get; set; }
 
     [JsonPropertyName("draft")]
@@ -31,6 +42,32 @@ public sealed class GsiPayload
 
     [JsonPropertyName("auth")]
     public GsiAuth? Auth { get; set; }
+}
+
+/// <summary>
+/// GSI <c>player</c> is either the local player (playing) or team→slot maps (spectating).
+/// </summary>
+public sealed class GsiPlayerNode
+{
+    public GsiPlayer? Local { get; set; }
+
+    /// <summary>Keys like <c>team2</c>/<c>team3</c>, then <c>player0</c>–<c>player9</c>.</summary>
+    public Dictionary<string, Dictionary<string, GsiPlayer>>? Teams { get; set; }
+
+    public bool IsSpectating => Teams is { Count: > 0 };
+}
+
+/// <summary>
+/// GSI <c>hero</c> is either the local hero (playing) or team→slot maps (spectating).
+/// </summary>
+public sealed class GsiHeroNode
+{
+    public GsiHero? Local { get; set; }
+
+    /// <summary>Keys like <c>team2</c>/<c>team3</c>, then <c>player0</c>–<c>player9</c>.</summary>
+    public Dictionary<string, Dictionary<string, GsiHero>>? Teams { get; set; }
+
+    public bool IsSpectating => Teams is { Count: > 0 };
 }
 
 public sealed class GsiProvider
@@ -61,6 +98,10 @@ public sealed class GsiMap
 
     [JsonPropertyName("daytime")]
     public bool Daytime { get; set; }
+
+    [JsonPropertyName("matchid")]
+    [JsonConverter(typeof(GsiFlexibleStringJsonConverter))]
+    public string? MatchId { get; set; }
 
     [JsonPropertyName("radiant_score")]
     public int RadiantScore { get; set; }
@@ -123,6 +164,10 @@ public sealed class GsiPlayer
     [JsonPropertyName("team_slot")]
     public int TeamSlot { get; set; }
 
+    /// <summary>0–4 radiant / 128–132 dire in many payloads; sometimes 0–9 lobby index.</summary>
+    [JsonPropertyName("player_slot")]
+    public int? PlayerSlot { get; set; }
+
     [JsonPropertyName("hero")]
     public GsiHero? Hero { get; set; }
 }
@@ -160,6 +205,29 @@ internal sealed class GsiTeamJsonConverter : JsonConverter<int>
 
     public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options) =>
         writer.WriteNumberValue(value);
+}
+
+internal sealed class GsiFlexibleStringJsonConverter : JsonConverter<string?>
+{
+    public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        reader.TokenType switch
+        {
+            JsonTokenType.String => reader.GetString(),
+            JsonTokenType.Number when reader.TryGetInt64(out var number) => number.ToString(),
+            JsonTokenType.Null => null,
+            _ => null,
+        };
+
+    public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
+    {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
+        writer.WriteStringValue(value);
+    }
 }
 
 public sealed class GsiHero
@@ -283,4 +351,284 @@ public sealed class GsiAuth
 {
     [JsonPropertyName("token")]
     public string? Token { get; set; }
+}
+
+internal sealed class GsiPlayerNodeJsonConverter : JsonConverter<GsiPlayerNode?>
+{
+    public override GsiPlayerNode? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Null)
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.ParseValue(ref reader);
+        var root = document.RootElement;
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        if (GsiSpectatingJson.IsSpectatingTeamMap(root))
+        {
+            return new GsiPlayerNode
+            {
+                Teams = GsiSpectatingJson.DeserializeTeamMap<GsiPlayer>(root, options),
+            };
+        }
+
+        return new GsiPlayerNode
+        {
+            Local = root.Deserialize<GsiPlayer>(options),
+        };
+    }
+
+    public override void Write(Utf8JsonWriter writer, GsiPlayerNode? value, JsonSerializerOptions options)
+    {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
+        if (value.IsSpectating)
+        {
+            JsonSerializer.Serialize(writer, value.Teams, options);
+            return;
+        }
+
+        JsonSerializer.Serialize(writer, value.Local, options);
+    }
+}
+
+internal sealed class GsiHeroNodeJsonConverter : JsonConverter<GsiHeroNode?>
+{
+    public override GsiHeroNode? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Null)
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.ParseValue(ref reader);
+        var root = document.RootElement;
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        if (GsiSpectatingJson.IsSpectatingTeamMap(root))
+        {
+            return new GsiHeroNode
+            {
+                Teams = GsiSpectatingJson.DeserializeTeamMap<GsiHero>(root, options),
+            };
+        }
+
+        return new GsiHeroNode
+        {
+            Local = root.Deserialize<GsiHero>(options),
+        };
+    }
+
+    public override void Write(Utf8JsonWriter writer, GsiHeroNode? value, JsonSerializerOptions options)
+    {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
+        if (value.IsSpectating)
+        {
+            JsonSerializer.Serialize(writer, value.Teams, options);
+            return;
+        }
+
+        JsonSerializer.Serialize(writer, value.Local, options);
+    }
+}
+
+/// <summary>
+/// Playing clients send flat slot dictionaries; spectators send team→player→slots. Only the flat shape is kept.
+/// </summary>
+internal sealed class GsiLocalDictionaryJsonConverter<TValue> : JsonConverter<Dictionary<string, TValue>?>
+{
+    public override Dictionary<string, TValue>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Null)
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.ParseValue(ref reader);
+        var root = document.RootElement;
+        if (root.ValueKind != JsonValueKind.Object || GsiSpectatingJson.IsSpectatingTeamMap(root))
+        {
+            return null;
+        }
+
+        var result = new Dictionary<string, TValue>(StringComparer.OrdinalIgnoreCase);
+        foreach (var property in root.EnumerateObject())
+        {
+            var value = property.Value.Deserialize<TValue>(options);
+            if (value is not null)
+            {
+                result[property.Name] = value;
+            }
+        }
+
+        return result.Count > 0 ? result : null;
+    }
+
+    public override void Write(Utf8JsonWriter writer, Dictionary<string, TValue>? value, JsonSerializerOptions options)
+    {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
+        writer.WriteStartObject();
+        foreach (var pair in value)
+        {
+            writer.WritePropertyName(pair.Key);
+            JsonSerializer.Serialize(writer, pair.Value, options);
+        }
+
+        writer.WriteEndObject();
+    }
+}
+
+internal sealed class GsiAllPlayersJsonConverter : JsonConverter<Dictionary<string, GsiPlayer>?>
+{
+    public override Dictionary<string, GsiPlayer>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Null)
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.ParseValue(ref reader);
+        var root = document.RootElement;
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var result = new Dictionary<string, GsiPlayer>(StringComparer.OrdinalIgnoreCase);
+
+        if (GsiSpectatingJson.IsSpectatingTeamMap(root))
+        {
+            var teams = GsiSpectatingJson.DeserializeTeamMap<GsiPlayer>(root, options);
+            if (teams is null)
+            {
+                return null;
+            }
+
+            foreach (var (teamKey, players) in teams)
+            {
+                foreach (var (playerKey, player) in players)
+                {
+                    result[$"{teamKey}.{playerKey}"] = player;
+                }
+            }
+
+            return result.Count > 0 ? result : null;
+        }
+
+        foreach (var property in root.EnumerateObject())
+        {
+            if (property.Value.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var player = property.Value.Deserialize<GsiPlayer>(options);
+            if (player is null || !LooksLikePlayer(player))
+            {
+                continue;
+            }
+
+            result[property.Name] = player;
+        }
+
+        return result.Count > 0 ? result : null;
+    }
+
+    public override void Write(Utf8JsonWriter writer, Dictionary<string, GsiPlayer>? value, JsonSerializerOptions options)
+    {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
+        JsonSerializer.Serialize(writer, value, options);
+    }
+
+    private static bool LooksLikePlayer(GsiPlayer player) =>
+        !string.IsNullOrWhiteSpace(player.SteamId)
+        || !string.IsNullOrWhiteSpace(player.Name)
+        || !string.IsNullOrWhiteSpace(player.TeamName)
+        || player.Team is 2 or 3
+        || player.PlayerSlot is not null;
+}
+
+internal static class GsiSpectatingJson
+{
+    public static bool IsSpectatingTeamMap(JsonElement root)
+    {
+        foreach (var property in root.EnumerateObject())
+        {
+            // Spectating uses team2/team3 buckets — not local fields like team_name / team_slot.
+            if (IsTeamBucketKey(property.Name) && property.Value.ValueKind == JsonValueKind.Object)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static Dictionary<string, Dictionary<string, T>>? DeserializeTeamMap<T>(
+        JsonElement root,
+        JsonSerializerOptions options)
+    {
+        var teams = new Dictionary<string, Dictionary<string, T>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var teamProperty in root.EnumerateObject())
+        {
+            if (!IsTeamBucketKey(teamProperty.Name)
+                || teamProperty.Value.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var players = teamProperty.Value.Deserialize<Dictionary<string, T>>(options);
+            if (players is { Count: > 0 })
+            {
+                teams[teamProperty.Name] = players;
+            }
+        }
+
+        return teams.Count > 0 ? teams : null;
+    }
+
+    private static bool IsTeamBucketKey(string name)
+    {
+        if (!name.StartsWith("team", StringComparison.OrdinalIgnoreCase) || name.Length <= 4)
+        {
+            return false;
+        }
+
+        for (var i = 4; i < name.Length; i++)
+        {
+            if (!char.IsDigit(name[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

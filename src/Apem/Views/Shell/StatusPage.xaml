@@ -24,7 +24,7 @@
                     <TextBlock Text="Status" Style="{StaticResource TitleTextBlockStyle}" />
                     <TextBlock
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="Live connection health for GSI and overlay updates."
+                        Text="Live connection health for GSI and overlay updates, plus the Dota 2 setup checklist."
                         TextWrapping="WrapWholeWords" />
                 </StackPanel>
 
@@ -39,10 +39,46 @@
                         <TextBlock x:Name="GsiStatusText" />
                         <TextBlock x:Name="ConnectionStatusText" />
                         <TextBlock x:Name="LastUpdateText" />
-                    <TextBlock
-                        x:Name="HotkeyHintText"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        TextWrapping="WrapWholeWords" />
+                        <TextBlock
+                            x:Name="HotkeyHintText"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                </Border>
+
+                <Border
+                    Padding="20"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Setup" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Get APEM connected to Dota 2 Game State Integration."
+                            TextWrapping="WrapWholeWords" />
+                        <TextBlock Text="1. Install GSI config into Dota cfg/gamestate_integration" />
+                        <TextBlock Text="2. Steam launch option: -gamestateintegration" />
+                        <TextBlock Text="3. Dota video setting: Borderless Windowed" />
+                        <TextBlock Text="4. Start a match — overlay updates automatically" />
+                        <TextBlock
+                            x:Name="InstallMessageText"
+                            TextWrapping="WrapWholeWords" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button
+                                x:Name="ReinstallButton"
+                                Content="Reinstall GSI config"
+                                Click="OnReinstallClick" />
+                            <Button
+                                x:Name="ShowOverlayButton"
+                                Content="Show overlay"
+                                Click="OnShowOverlayClick" />
+                            <Button
+                                x:Name="HideOverlayButton"
+                                Content="Hide overlay"
+                                Click="OnHideOverlayClick" />
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </StackPanel>

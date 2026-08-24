@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="Apem.Views.Shell.MatchPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:converters="using:Apem.Converters"
+    mc:Ignorable="d"
+    NavigationCacheMode="Disabled">
+
+    <Page.Resources>
+        <converters:UriToImageSourceConverter x:Key="UriToImageSourceConverter" />
+        <converters:NullOrEmptyToVisibilityConverter x:Key="NonEmptyToVisible" />
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisible" />
+
+        <GridLength x:Key="ScoreboardColPlayer">280</GridLength>
+        <GridLength x:Key="ScoreboardColHero">56</GridLength>
+        <GridLength x:Key="ScoreboardColRank">40</GridLength>
+        <GridLength x:Key="ScoreboardColMatches">72</GridLength>
+        <GridLength x:Key="ScoreboardColActions">188</GridLength>
+
+        <Style x:Key="ScoreboardHeaderTextStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style x:Key="ScoreboardGridStyle" TargetType="Grid">
+            <Setter Property="ColumnSpacing" Value="12" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="MinWidth" Value="672" />
+        </Style>
+
+        <DataTemplate x:Key="PlayerRowTemplate">
+            <Grid Style="{StaticResource ScoreboardGridStyle}" Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="{StaticResource ScoreboardColPlayer}" />
+                    <ColumnDefinition Width="{StaticResource ScoreboardColHero}" />
+                    <ColumnDefinition Width="{StaticResource ScoreboardColRank}" />
+                    <ColumnDefinition Width="{StaticResource ScoreboardColMatches}" />
+                    <ColumnDefinition Width="{StaticResource ScoreboardColActions}" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel
+                    Grid.Column="0"
+                    Orientation="Horizontal"
+                    Spacing="10"
+                    VerticalAlignment="Center">
+                    <PersonPicture
+                        Width="32"
+                        Height="32"
+                        DisplayName="{Binding Name}"
+                        ProfilePicture="{Binding AvatarUrl, Converter={StaticResource UriToImageSourceConverter}}" />
+                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <HyperlinkButton
+                                Padding="0"
+                                VerticalAlignment="Center"
+                                Content="{Binding Name}"
+                                Click="OnPlayerNameClick" />
+                            <FontIcon
+                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                FontSize="12"
+                                Glyph="&#xE72E;"
+                                VerticalAlignment="Center"
+                                ToolTipService.ToolTip="Private profile"
+                                Visibility="{Binding IsProfilePrivate, Converter={StaticResource BoolToVisible}}" />
+                        </StackPanel>
+                        <TextBlock
+                            FontSize="11"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="{Binding OverviewSubtitle}"
+                            Visibility="{Binding OverviewSubtitle, Converter={StaticResource NonEmptyToVisible}}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Image
+                    Grid.Column="1"
+                    Width="48"
+                    Height="27"
+                    VerticalAlignment="Center"
+                    Stretch="UniformToFill"
+                    Source="{Binding HeroImageUrl, Converter={StaticResource UriToImageSourceConverter}}"
+                    ToolTipService.ToolTip="{Binding DisplayHeroName}"
+                    Visibility="{Binding HeroImageUrl, Converter={StaticResource NonEmptyToVisible}}" />
+
+                <Grid
+                    Grid.Column="2"
+                    Width="32"
+                    Height="32"
+                    VerticalAlignment="Center"
+                    ToolTipService.ToolTip="{Binding RankLabel}"
+                    Visibility="{Binding RankIconUrl, Converter={StaticResource NonEmptyToVisible}}">
+                    <Image
+                        Stretch="Uniform"
+                        Source="{Binding RankIconUrl, Converter={StaticResource UriToImageSourceConverter}}" />
+                    <Image
+                        Stretch="Uniform"
+                        Source="{Binding RankStarUrl, Converter={StaticResource UriToImageSourceConverter}}"
+                        Visibility="{Binding RankStarUrl, Converter={StaticResource NonEmptyToVisible}}" />
+                </Grid>
+
+                <TextBlock
+                    Grid.Column="3"
+                    VerticalAlignment="Center"
+                    Text="{Binding MatchesLabel}"
+                    ToolTipService.ToolTip="Total matches (wins + losses)" />
+
+                <StackPanel
+                    Grid.Column="4"
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    VerticalAlignment="Center">
+                    <Button
+                        Padding="8,4"
+                        MinWidth="0"
+                        AutomationProperties.Name="Like player"
+                        Click="OnLikeClick"
+                        IsEnabled="{Binding CanVote}"
+                        ToolTipService.ToolTip="{Binding LikeToolTip}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon
+                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                FontSize="14"
+                                Glyph="{Binding LikeGlyph}" />
+                            <TextBlock Text="{Binding LikeCount}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Padding="8,4"
+                        MinWidth="0"
+                        AutomationProperties.Name="Dislike player"
+                        Click="OnDislikeClick"
+                        IsEnabled="{Binding CanVote}"
+                        ToolTipService.ToolTip="{Binding DislikeToolTip}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon
+                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                FontSize="14"
+                                Glyph="{Binding DislikeGlyph}" />
+                            <TextBlock Text="{Binding DislikeCount}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Padding="8,4"
+                        MinWidth="0"
+                        AutomationProperties.Name="{Binding NoteButtonLabel}"
+                        Click="OnAddNoteClick"
+                        ToolTipService.ToolTip="{Binding NoteToolTip}">
+                        <FontIcon
+                            FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                            FontSize="14"
+                            Glyph="{Binding NoteGlyph}" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid x:Name="LayoutRoot">
+        <ScrollViewer
+            HorizontalScrollBarVisibility="Auto"
+            VerticalScrollBarVisibility="Auto"
+            HorizontalScrollMode="Auto"
+            VerticalScrollMode="Auto">
+            <StackPanel
+                x:Name="ContentColumn"
+                Padding="32"
+                Spacing="24"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Match" Style="{StaticResource TitleTextBlockStyle}" />
+                    <TextBlock
+                        x:Name="SubtitleText"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Waiting for Dota 2."
+                        TextWrapping="WrapWholeWords" />
+                </StackPanel>
+
+                <Border
+                    Padding="20"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Radiant" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <Grid Style="{StaticResource ScoreboardGridStyle}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="{StaticResource ScoreboardColPlayer}" />
+                                <ColumnDefinition Width="{StaticResource ScoreboardColHero}" />
+                                <ColumnDefinition Width="{StaticResource ScoreboardColRank}" />
+                                <ColumnDefinition Width="{StaticResource ScoreboardColMatches}" />
+                                <ColumnDefinition Width="{StaticResource ScoreboardColActions}" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Player" />
+                            <TextBlock Grid.Column="1" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Hero" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Rank" />
+                            <TextBlock Grid.Column="3" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Matches" />
+                            <TextBlock Grid.Column="4" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Actions" />
+                        </Grid>
+                        <ItemsControl
+                            x:Name="RadiantPlayersList"
+                            HorizontalContentAlignment="Stretch"
+                            ItemTemplate="{StaticResource PlayerRowTemplate}" />
+                    </StackPanel>
+                </Border>
+
+                <Border
+                    Padding="20"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Dire" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <Grid Style="{StaticResource ScoreboardGridStyle}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="{StaticResource ScoreboardColPlayer}" />
+                                <ColumnDefinition Width="{StaticResource ScoreboardColHero}" />
+                                <ColumnDefinition Width="{StaticResource ScoreboardColRank}" />
+                                <ColumnDefinition Width="{StaticResource ScoreboardColMatches}" />
+                                <ColumnDefinition Width="{StaticResource ScoreboardColActions}" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Player" />
+                            <TextBlock Grid.Column="1" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Hero" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Rank" />
+                            <TextBlock Grid.Column="3" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Matches" />
+                            <TextBlock Grid.Column="4" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Actions" />
+                        </Grid>
+                        <ItemsControl
+                            x:Name="DirePlayersList"
+                            HorizontalContentAlignment="Stretch"
+                            ItemTemplate="{StaticResource PlayerRowTemplate}" />
+                    </StackPanel>
+                </Border>
+
+                <Border
+                    x:Name="LobbyPlayersCard"
+                    Padding="20"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Visibility="Collapsed">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Lobby" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Players without a Radiant/Dire assignment yet (common early in pick)."
+                            TextWrapping="WrapWholeWords" />
+                        <Grid Style="{StaticResource ScoreboardGridStyle}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="{StaticResource ScoreboardColPlayer}" />
+                                <ColumnDefinition Width="{StaticResource ScoreboardColHero}" />
+                                <ColumnDefinition Width="{StaticResource ScoreboardColRank}" />
+                                <ColumnDefinition Width="{StaticResource ScoreboardColMatches}" />
+                                <ColumnDefinition Width="{StaticResource ScoreboardColActions}" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Player" />
+                            <TextBlock Grid.Column="1" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Hero" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Rank" />
+                            <TextBlock Grid.Column="3" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Matches" />
+                            <TextBlock Grid.Column="4" Style="{StaticResource ScoreboardHeaderTextStyle}" Text="Actions" />
+                        </Grid>
+                        <ItemsControl
+                            x:Name="LobbyPlayersList"
+                            HorizontalContentAlignment="Stretch"
+                            ItemTemplate="{StaticResource PlayerRowTemplate}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

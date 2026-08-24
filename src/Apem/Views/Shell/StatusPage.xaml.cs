@@ -1,4 +1,5 @@
 using Apem.ViewModels;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
@@ -43,6 +44,7 @@ public sealed partial class StatusPage : Page
             or nameof(ShellViewModel.ConnectionStatus)
             or nameof(ShellViewModel.LastUpdate)
             or nameof(ShellViewModel.HotkeyHintText)
+            or nameof(ShellViewModel.InstallMessage)
             or null)
         {
             BindFromViewModel();
@@ -60,5 +62,15 @@ public sealed partial class StatusPage : Page
         ConnectionStatusText.Text = _viewModel.ConnectionStatus;
         LastUpdateText.Text = $"Last update: {_viewModel.LastUpdate}";
         HotkeyHintText.Text = _viewModel.HotkeyHintText;
+        InstallMessageText.Text = _viewModel.InstallMessage;
     }
+
+    private void OnReinstallClick(object sender, RoutedEventArgs e) =>
+        _viewModel?.ReinstallGsiConfigCommand.Execute(null);
+
+    private void OnShowOverlayClick(object sender, RoutedEventArgs e) =>
+        _viewModel?.ShowOverlayCommand.Execute(null);
+
+    private void OnHideOverlayClick(object sender, RoutedEventArgs e) =>
+        _viewModel?.HideOverlayCommand.Execute(null);
 }

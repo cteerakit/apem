@@ -1,21 +1,29 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Apem.Models;
 
 namespace Apem.Services;
 
 public sealed class OpenDotaService
 {
-    private readonly HttpClient _httpClient = new()
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        BaseAddress = new Uri("https://api.opendota.com/api/"),
-        Timeout = TimeSpan.FromSeconds(20),
+        PropertyNameCaseInsensitive = true,
     };
 
+    private readonly HttpClient _httpClient;
     private readonly string _cacheDirectory;
     private List<HeroConstant>? _heroes;
 
     public OpenDotaService()
     {
+        _httpClient = new HttpClient
+        {
+            BaseAddress = new Uri("https://api.opendota.com/api/"),
+            Timeout = TimeSpan.FromSeconds(20),
+        };
+        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("APEM/1.0");
+
         _cacheDirectory = Path.Combine(AppSettings.SettingsDirectory, "cache");
         Directory.CreateDirectory(_cacheDirectory);
     }
@@ -27,18 +35,18 @@ public sealed class OpenDotaService
             return _heroes;
         }
 
-        _heroes = await GetCachedAsync<List<HeroConstant>>(
+        _heroes = await GetCachedRequiredAsync<List<HeroConstant>>(
             "heroes.json",
-            static () => "/heroes",
+            static () => "heroes",
             cancellationToken);
         return _heroes;
     }
 
     public async Task<IReadOnlyList<HeroMatchup>> GetHeroMatchupsAsync(int heroId, CancellationToken cancellationToken = default)
     {
-        return await GetCachedAsync<List<HeroMatchup>>(
+        return await GetCachedRequiredAsync<List<HeroMatchup>>(
             $"matchups_{heroId}.json",
-            () => $"/heroes/{heroId}/matchups",
+            () => $"heroes/{heroId}/matchups",
             cancellationToken,
             TimeSpan.FromDays(1));
     }
@@ -47,7 +55,7 @@ public sealed class OpenDotaService
     {
         return await GetCachedAsync<ItemPopularity>(
             $"item_popularity_{heroId}.json",
-            () => $"/heroes/{heroId}/itemPopularity",
+            () => $"heroes/{heroId}/itemPopularity",
             cancellationToken,
             TimeSpan.FromDays(1));
     }
@@ -134,6 +142,314 @@ public sealed class OpenDotaService
         return int.TryParse(idText, out var id) ? id : null;
     }
 
+    public async Task<IReadOnlyList<MatchPlayer>?> GetMatchRosterAsync(
+        string matchId,
+        ulong? localAccountId = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (!PlayerNotesMatch.IsUsableMatchId(matchId) && localAccountId is null)
+        {
+            return null;
+        }
+
+        var heroNames = await GetHeroInternalNameMapAsync(cancellationToken);
+        IReadOnlyList<MatchPlayer>? roster = null;
+
+        if (PlayerNotesMatch.IsUsableMatchId(matchId))
+        {
+            var details = await GetCachedAsync<OpenDotaMatchDetails>(
+                $"match_{matchId}_roster.json",
+                () => $"matches/{matchId}",
+                cancellationToken,
+                TimeSpan.FromSeconds(30));
+
+            roster = details?.Players is { Count: > 0 } players
+                ? players
+                    .Where(static player => player.AccountId > 0)
+                    .Select(player => ToMatchPlayerFromDetails(player, heroNames))
+                    .Where(static player => !string.IsNullOrWhiteSpace(player.SteamId))
+                    .ToList()
+                : null;
+        }
+
+        if (roster is null || roster.Count < 2)
+        {
+            var livePlayers = await FindLivePlayersAsync(matchId, localAccountId, cancellationToken);
+            if (livePlayers is { Count: > 0 })
+            {
+                roster = livePlayers
+                    .Where(static player => player.AccountId > 0)
+                    .Select(player => ToMatchPlayerFromLive(player, heroNames))
+                    .Where(static player => !string.IsNullOrWhiteSpace(player.SteamId))
+                    .ToList();
+            }
+        }
+
+        return roster is { Count: > 0 } ? roster : null;
+    }
+
+    private async Task<List<OpenDotaLivePlayer>?> FindLivePlayersAsync(
+        string matchId,
+        ulong? localAccountId,
+        CancellationToken cancellationToken)
+    {
+        var liveGames = await GetCachedAsync<List<OpenDotaLiveGame>>(
+            "live_games.json",
+            static () => "live",
+            cancellationToken,
+            TimeSpan.FromSeconds(20));
+
+        if (liveGames is null || liveGames.Count == 0)
+        {
+            return null;
+        }
+
+        if (PlayerNotesMatch.IsUsableMatchId(matchId))
+        {
+            var byMatchId = liveGames.FirstOrDefault(game =>
+                string.Equals(game.MatchId, matchId, StringComparison.OrdinalIgnoreCase));
+            if (byMatchId?.Players is { Count: > 0 } matchedPlayers)
+            {
+                return matchedPlayers;
+            }
+        }
+
+        if (localAccountId is null)
+        {
+            return null;
+        }
+
+        var byAccount = liveGames.FirstOrDefault(game =>
+            game.Players?.Any(player => player.AccountId == localAccountId.Value) == true);
+        return byAccount?.Players;
+    }
+
+    private async Task<IReadOnlyDictionary<int, string>> GetHeroInternalNameMapAsync(
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var heroes = await GetHeroesAsync(cancellationToken);
+            return heroes
+                .GroupBy(static hero => hero.Id)
+                .ToDictionary(static group => group.Key, static group => group.First().Name);
+        }
+        catch
+        {
+            return new Dictionary<int, string>();
+        }
+    }
+
+    private static MatchPlayer ToMatchPlayerFromDetails(
+        OpenDotaMatchPlayer player,
+        IReadOnlyDictionary<int, string> heroNames)
+    {
+        var isRadiant = player.PlayerSlot < 128;
+        heroNames.TryGetValue(player.HeroId, out var heroName);
+        var teamSlot = isRadiant ? player.PlayerSlot : player.PlayerSlot - 128;
+
+        return new MatchPlayer
+        {
+            SteamId = player.AccountId.ToString(),
+            Name = FirstNonEmpty(player.PersonaName, player.AccountId.ToString()),
+            TeamName = isRadiant ? "radiant" : "dire",
+            TeamSlot = Math.Max(teamSlot, 0),
+            HeroName = heroName ?? string.Empty,
+            Kills = player.Kills,
+            Deaths = player.Deaths,
+            Assists = player.Assists,
+        };
+    }
+
+    private static MatchPlayer ToMatchPlayerFromLive(
+        OpenDotaLivePlayer player,
+        IReadOnlyDictionary<int, string> heroNames)
+    {
+        var isRadiant = player.Team == 0;
+        heroNames.TryGetValue(player.HeroId, out var heroName);
+
+        return new MatchPlayer
+        {
+            SteamId = player.AccountId.ToString(),
+            Name = player.AccountId.ToString(),
+            TeamName = isRadiant ? "radiant" : "dire",
+            TeamSlot = Math.Max(player.TeamSlot - 1, 0),
+            HeroName = heroName ?? string.Empty,
+        };
+    }
+
+    public async Task<PlayerOverview?> GetPlayerOverviewAsync(
+        string steamId,
+        CancellationToken cancellationToken = default)
+    {
+        var accountId = SteamIdConverter.ToAccountId(steamId);
+        if (accountId is null)
+        {
+            return null;
+        }
+
+        var heroNames = await GetHeroNameMapAsync(cancellationToken);
+
+        var profile = await GetCachedAsync<OpenDotaPlayerProfile>(
+            $"player_{accountId}.json",
+            () => $"players/{accountId}",
+            cancellationToken,
+            TimeSpan.FromHours(6));
+
+        var winLoss = await GetCachedAsync<OpenDotaWinLoss>(
+            $"player_{accountId}_wl.json",
+            () => $"players/{accountId}/wl",
+            cancellationToken,
+            TimeSpan.FromHours(1));
+
+        var recentMatches = await GetCachedAsync<List<OpenDotaRecentMatch>>(
+            $"player_{accountId}_recent.json",
+            () => $"players/{accountId}/recentMatches",
+            cancellationToken,
+            TimeSpan.FromMinutes(15));
+
+        if (profile is null && winLoss is null && recentMatches is null)
+        {
+            return null;
+        }
+
+        var wins = winLoss?.Win ?? 0;
+        var losses = winLoss?.Lose ?? 0;
+        var total = wins + losses;
+        var mmrEstimate = ReadMmrEstimate(profile);
+        var resolved = RankEstimator.Resolve(
+            profile?.RankTier,
+            profile?.LeaderboardRank,
+            mmrEstimate,
+            lobbyAverageTiers: null);
+
+        return new PlayerOverview
+        {
+            SteamId = steamId.Trim(),
+            DisplayName = FirstNonEmpty(profile?.Profile?.PersonaName, steamId),
+            RankTier = profile?.RankTier,
+            LeaderboardRank = profile?.LeaderboardRank,
+            MmrEstimate = mmrEstimate,
+            DisplayRankTier = resolved.RankTier,
+            RankIsEstimated = resolved.IsEstimated,
+            RankLabel = string.IsNullOrWhiteSpace(resolved.Label) ? "—" : resolved.Label,
+            Wins = wins,
+            Losses = losses,
+            WinRatePercent = total > 0 ? Math.Round(wins * 100.0 / total, 1) : null,
+            IsPrivate = profile?.Profile?.FhUnavailable == true,
+            RecentMatches = recentMatches?
+                .Select(match => ToMatchRow(match, heroNames))
+                .ToList() ?? [],
+        };
+    }
+
+    private static int? ReadMmrEstimate(OpenDotaPlayerProfile? profile)
+    {
+        if (profile?.ComputedMmr is > 0)
+        {
+            return (int)Math.Round(profile.ComputedMmr.Value);
+        }
+
+        if (profile?.MmrEstimate?.Estimate is > 0)
+        {
+            return profile.MmrEstimate.Estimate;
+        }
+
+        return null;
+    }
+
+    private async Task<IReadOnlyDictionary<int, string>> GetHeroNameMapAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var heroes = await GetHeroesAsync(cancellationToken);
+            return heroes
+                .GroupBy(static hero => hero.Id)
+                .ToDictionary(static group => group.Key, static group => group.First().LocalizedName);
+        }
+        catch
+        {
+            return new Dictionary<int, string>();
+        }
+    }
+
+    private static PlayerMatchRow ToMatchRow(
+        OpenDotaRecentMatch match,
+        IReadOnlyDictionary<int, string> heroNames)
+    {
+        var isRadiant = match.PlayerSlot < 128;
+        var won = isRadiant == match.RadiantWin;
+        heroNames.TryGetValue(match.HeroId, out var heroName);
+        heroName ??= $"Hero {match.HeroId}";
+
+        return new PlayerMatchRow
+        {
+            MatchId = match.MatchId.ToString(),
+            HeroName = heroName,
+            Result = won ? "Win" : "Loss",
+            Kda = $"{match.Kills}/{match.Deaths}/{match.Assists}",
+            Duration = FormatDuration(match.Duration),
+            PlayedAt = DateTimeOffset.FromUnixTimeSeconds(match.StartTime).ToLocalTime().ToString("g"),
+        };
+    }
+
+    private static string FormatDuration(int seconds)
+    {
+        if (seconds <= 0)
+        {
+            return "—";
+        }
+
+        var span = TimeSpan.FromSeconds(seconds);
+        return span.TotalHours >= 1
+            ? $"{(int)span.TotalHours}:{span.Minutes:D2}:{span.Seconds:D2}"
+            : $"{span.Minutes}:{span.Seconds:D2}";
+    }
+
+    public static string FormatRankTier(int? rankTier, int? leaderboardRank = null)
+    {
+        if (rankTier is null or <= 0)
+        {
+            return "Unranked";
+        }
+
+        var tier = rankTier.Value;
+        var medal = tier / 10;
+        var stars = tier % 10;
+        var medalName = medal switch
+        {
+            1 => "Herald",
+            2 => "Guardian",
+            3 => "Crusader",
+            4 => "Archon",
+            5 => "Legend",
+            6 => "Ancient",
+            7 => "Divine",
+            8 => "Immortal",
+            _ => "Unknown",
+        };
+
+        if (medal == 8)
+        {
+            return leaderboardRank is > 0 ? $"Immortal #{leaderboardRank}" : medalName;
+        }
+
+        return stars > 0 ? $"{medalName} {stars}" : medalName;
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return "—";
+    }
+
     private static string ResolveItemName(int itemId) =>
         itemId switch
         {
@@ -141,11 +457,11 @@ public sealed class OpenDotaService
             _ => string.Empty,
         };
 
-    private async Task<T> GetCachedAsync<T>(
+    private async Task<T?> GetCachedAsync<T>(
         string cacheFile,
         Func<string> endpointFactory,
         CancellationToken cancellationToken,
-        TimeSpan? maxAge = null)
+        TimeSpan? maxAge = null) where T : class
     {
         var cachePath = Path.Combine(_cacheDirectory, cacheFile);
         if (File.Exists(cachePath))
@@ -154,7 +470,7 @@ public sealed class OpenDotaService
             if (maxAge is null || age <= maxAge)
             {
                 var cached = await File.ReadAllTextAsync(cachePath, cancellationToken);
-                var cachedValue = JsonSerializer.Deserialize<T>(cached);
+                var cachedValue = JsonSerializer.Deserialize<T>(cached, JsonOptions);
                 if (cachedValue is not null)
                 {
                     return cachedValue;
@@ -163,9 +479,25 @@ public sealed class OpenDotaService
         }
 
         var endpoint = endpointFactory();
-        var json = await _httpClient.GetStringAsync(endpoint, cancellationToken);
+        using var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         await File.WriteAllTextAsync(cachePath, json, cancellationToken);
-        return JsonSerializer.Deserialize<T>(json) ?? throw new InvalidOperationException($"Failed to deserialize {endpoint}");
+        return JsonSerializer.Deserialize<T>(json, JsonOptions);
+    }
+
+    private async Task<T> GetCachedRequiredAsync<T>(
+        string cacheFile,
+        Func<string> endpointFactory,
+        CancellationToken cancellationToken,
+        TimeSpan? maxAge = null) where T : class
+    {
+        var value = await GetCachedAsync<T>(cacheFile, endpointFactory, cancellationToken, maxAge);
+        return value ?? throw new InvalidOperationException($"Failed to load OpenDota data from {endpointFactory()}");
     }
 }
 
@@ -213,4 +545,169 @@ public sealed class CounterSuggestion
     public int HeroId { get; set; }
     public string HeroName { get; set; } = string.Empty;
     public double Score { get; set; }
+}
+
+public sealed class OpenDotaPlayerProfile
+{
+    [JsonPropertyName("profile")]
+    public OpenDotaPlayerProfileDetails? Profile { get; set; }
+
+    [JsonPropertyName("rank_tier")]
+    public int? RankTier { get; set; }
+
+    [JsonPropertyName("leaderboard_rank")]
+    public int? LeaderboardRank { get; set; }
+
+    [JsonPropertyName("mmr_estimate")]
+    public OpenDotaMmrEstimate? MmrEstimate { get; set; }
+
+    [JsonPropertyName("computed_mmr")]
+    public double? ComputedMmr { get; set; }
+}
+
+public sealed class OpenDotaMmrEstimate
+{
+    [JsonPropertyName("estimate")]
+    public int? Estimate { get; set; }
+}
+
+public sealed class OpenDotaPlayerProfileDetails
+{
+    [JsonPropertyName("personaname")]
+    public string PersonaName { get; set; } = string.Empty;
+
+    /// <summary>True when OpenDota cannot refresh match history (often Expose Public Match Data off).</summary>
+    [JsonPropertyName("fh_unavailable")]
+    public bool? FhUnavailable { get; set; }
+}
+
+public sealed class OpenDotaWinLoss
+{
+    [JsonPropertyName("win")]
+    public int Win { get; set; }
+
+    [JsonPropertyName("lose")]
+    public int Lose { get; set; }
+}
+
+public sealed class OpenDotaMatchDetails
+{
+    [JsonPropertyName("match_id")]
+    public long MatchId { get; set; }
+
+    [JsonPropertyName("players")]
+    public List<OpenDotaMatchPlayer> Players { get; set; } = [];
+}
+
+public sealed class OpenDotaMatchPlayer
+{
+    [JsonPropertyName("account_id")]
+    public ulong AccountId { get; set; }
+
+    [JsonPropertyName("player_slot")]
+    public int PlayerSlot { get; set; }
+
+    [JsonPropertyName("hero_id")]
+    public int HeroId { get; set; }
+
+    [JsonPropertyName("personaname")]
+    public string? PersonaName { get; set; }
+
+    [JsonPropertyName("kills")]
+    public int Kills { get; set; }
+
+    [JsonPropertyName("deaths")]
+    public int Deaths { get; set; }
+
+    [JsonPropertyName("assists")]
+    public int Assists { get; set; }
+}
+
+public sealed class OpenDotaLiveGame
+{
+    [JsonPropertyName("match_id")]
+    public string MatchId { get; set; } = string.Empty;
+
+    [JsonPropertyName("players")]
+    public List<OpenDotaLivePlayer>? Players { get; set; }
+}
+
+public sealed class OpenDotaLivePlayer
+{
+    [JsonPropertyName("account_id")]
+    public ulong AccountId { get; set; }
+
+    [JsonPropertyName("hero_id")]
+    public int HeroId { get; set; }
+
+    [JsonPropertyName("team_slot")]
+    public int TeamSlot { get; set; }
+
+    [JsonPropertyName("team")]
+    public int Team { get; set; }
+}
+
+public sealed class OpenDotaRecentMatch
+{
+    [JsonPropertyName("match_id")]
+    public long MatchId { get; set; }
+
+    [JsonPropertyName("player_slot")]
+    public int PlayerSlot { get; set; }
+
+    [JsonPropertyName("radiant_win")]
+    public bool RadiantWin { get; set; }
+
+    [JsonPropertyName("duration")]
+    public int Duration { get; set; }
+
+    [JsonPropertyName("hero_id")]
+    public int HeroId { get; set; }
+
+    [JsonPropertyName("start_time")]
+    public long StartTime { get; set; }
+
+    [JsonPropertyName("kills")]
+    public int Kills { get; set; }
+
+    [JsonPropertyName("deaths")]
+    public int Deaths { get; set; }
+
+    [JsonPropertyName("assists")]
+    public int Assists { get; set; }
+}
+
+public sealed class PlayerOverview
+{
+    public string SteamId { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public int? RankTier { get; set; }
+    public int? LeaderboardRank { get; set; }
+    public int? MmrEstimate { get; set; }
+    public int? DisplayRankTier { get; set; }
+    public bool RankIsEstimated { get; set; }
+    public string RankLabel { get; set; } = "—";
+    public int Wins { get; set; }
+    public int Losses { get; set; }
+    public double? WinRatePercent { get; set; }
+    public bool IsPrivate { get; set; }
+    public IReadOnlyList<PlayerMatchRow> RecentMatches { get; set; } = Array.Empty<PlayerMatchRow>();
+}
+
+public sealed class PlayerMatchRow
+{
+    public string MatchId { get; set; } = string.Empty;
+    public string HeroName { get; set; } = string.Empty;
+    public string Result { get; set; } = string.Empty;
+    public string Kda { get; set; } = string.Empty;
+    public string Duration { get; set; } = string.Empty;
+    public string PlayedAt { get; set; } = string.Empty;
+}
+
+public sealed class PlayerPickerItem
+{
+    public string SteamId { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public string DisplayLabel =>
+        string.IsNullOrWhiteSpace(Name) ? SteamId : $"{Name} · {SteamId}";
 }

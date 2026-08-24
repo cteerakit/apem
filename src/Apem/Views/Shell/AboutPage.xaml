@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="Apem.Views.Shell.AboutPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    NavigationCacheMode="Disabled">
+
+    <Grid x:Name="LayoutRoot">
+        <ScrollViewer
+            HorizontalScrollBarVisibility="Auto"
+            VerticalScrollBarVisibility="Auto"
+            HorizontalScrollMode="Auto"
+            VerticalScrollMode="Auto">
+            <StackPanel
+                x:Name="ContentColumn"
+                Padding="32"
+                Spacing="24"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="About" Style="{StaticResource TitleTextBlockStyle}" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="APEM — a Dota 2 live companion."
+                        TextWrapping="WrapWholeWords" />
+                </StackPanel>
+
+                <Border
+                    Padding="20"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="APEM" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            TextWrapping="WrapWholeWords"
+                            Text="APEM connects to Dota 2 through Game State Integration (GSI) to show the live match roster, enrich players with OpenDota and Steam data, keep local notes and votes, and drive an in-game overlay with objective timers." />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Version" />
+                            <TextBlock
+                                x:Name="VersionText"
+                                VerticalAlignment="Center"
+                                FontWeight="SemiBold"
+                                Text="—" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border
+                    Padding="20"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12">
+                    <StackPanel Spacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Developer" Style="{StaticResource SubtitleTextBlockStyle}" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Experimental overlay features and debug tools."
+                                TextWrapping="WrapWholeWords" />
+                        </StackPanel>
+                        <HyperlinkButton
+                            Padding="0"
+                            Content="Open developer options"
+                            Click="OnDeveloperClick" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

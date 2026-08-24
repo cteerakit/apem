@@ -1,107 +1,204 @@
-using Apem.ViewModels;
+using Apem.Models;
+using Apem.Services;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Navigation;
+using Microsoft.Windows.Storage.Pickers;
 
 namespace Apem.Views.Shell;
 
 public sealed partial class SettingsPage : Page
 {
-    private ShellViewModel? _viewModel;
-    private bool _suppressEvents;
+    private bool _notesTransferBusy;
+    private bool _suppressSteamKeyChange;
 
     public SettingsPage()
     {
         InitializeComponent();
         ShellContentLayout.Attach(LayoutRoot, ContentColumn);
+        LoadSteamApiKey();
     }
 
-    protected override void OnNavigatedTo(NavigationEventArgs e)
+    private void LoadSteamApiKey()
     {
-        base.OnNavigatedTo(e);
-        if (e.Parameter is not ShellViewModel viewModel)
+        _suppressSteamKeyChange = true;
+        SteamApiKeyBox.Password = AppServices.Settings.SteamApiKey;
+        _suppressSteamKeyChange = false;
+        SteamApiKeyStatus.Text = string.IsNullOrWhiteSpace(AppServices.Settings.SteamApiKey)
+            ? "No Steam API key saved."
+            : "Steam API key saved on this PC.";
+    }
+
+    private void OnSteamApiKeyChanged(object sender, RoutedEventArgs e)
+    {
+        if (_suppressSteamKeyChange)
         {
             return;
         }
 
-        _viewModel = viewModel;
-        _suppressEvents = true;
-        PlayerToggle.IsOn = viewModel.ShowPlayerPanel;
-        BountyTimerToggle.IsOn = viewModel.ShowBountyTimer;
-        PowerTimerToggle.IsOn = viewModel.ShowPowerTimer;
-        WisdomTimerToggle.IsOn = viewModel.ShowWisdomTimer;
-        LotusTimerToggle.IsOn = viewModel.ShowLotusTimer;
-        OpacitySlider.Value = viewModel.OverlayOpacity;
-        RuneLeadNumberBox.Value = viewModel.RuneTimerLeadSeconds;
-        TurboToggle.IsOn = viewModel.IsTurboMode;
-        _suppressEvents = false;
-
-        PlayerToggle.Toggled += OnSettingChanged;
-        BountyTimerToggle.Toggled += OnSettingChanged;
-        PowerTimerToggle.Toggled += OnSettingChanged;
-        WisdomTimerToggle.Toggled += OnSettingChanged;
-        LotusTimerToggle.Toggled += OnSettingChanged;
-        OpacitySlider.ValueChanged += OnOpacityChanged;
-        RuneLeadNumberBox.ValueChanged += OnRuneLeadChanged;
-        TurboToggle.Toggled += OnSettingChanged;
+        AppServices.Settings.SteamApiKey = SteamApiKeyBox.Password.Trim();
+        AppServices.Settings.Save();
+        SteamApiKeyStatus.Text = string.IsNullOrWhiteSpace(AppServices.Settings.SteamApiKey)
+            ? "Steam API key cleared."
+            : "Steam API key saved.";
     }
 
-    private void OnOpacityChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    private void OnViewNotesClick(object sender, RoutedEventArgs e)
     {
-        if (_suppressEvents)
+        Frame?.Navigate(typeof(NotesListPage));
+    }
+
+    private async void OnExportNotesClick(object sender, RoutedEventArgs e)
+    {
+        if (_notesTransferBusy)
         {
             return;
         }
 
-        ApplySettings();
+        _notesTransferBusy = true;
+        try
+        {
+            var notes = AppServices.Settings.PlayerNotes;
+            var picker = new FileSavePicker(App.Window.AppWindow.Id)
+            {
+                SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+                SuggestedFileName = "apem-player-notes",
+                DefaultFileExtension = ".json",
+                CommitButtonText = "Export notes",
+            };
+            picker.FileTypeChoices.Add("Player notes", [".json"]);
+
+            var result = await picker.PickSaveFileAsync();
+            if (result is null)
+            {
+                return;
+            }
+
+            await File.WriteAllTextAsync(result.Path, PlayerNotesTransfer.Serialize(notes));
+            ShowNotesTransferStatus($"Exported {CountNotes(notes)} note(s) to {Path.GetFileName(result.Path)}.");
+        }
+        catch (Exception ex)
+        {
+            await ShowMessageAsync("Could not export notes", ex.Message);
+        }
+        finally
+        {
+            _notesTransferBusy = false;
+        }
     }
 
-    private void OnRuneLeadChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    private async void OnImportNotesClick(object sender, RoutedEventArgs e)
     {
-        if (_suppressEvents || double.IsNaN(args.NewValue))
+        if (_notesTransferBusy)
         {
             return;
         }
 
-        ApplySettings();
+        _notesTransferBusy = true;
+        try
+        {
+            var picker = new FileOpenPicker(App.Window.AppWindow.Id)
+            {
+                SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+                CommitButtonText = "Import notes",
+            };
+            picker.FileTypeFilter.Add(".json");
+
+            var result = await picker.PickSingleFileAsync();
+            if (result is null)
+            {
+                return;
+            }
+
+            var json = await File.ReadAllTextAsync(result.Path);
+            if (!PlayerNotesTransfer.TryParse(json, out var imported, out var error))
+            {
+                await ShowMessageAsync("Could not import notes", error);
+                return;
+            }
+
+            if (imported.Count == 0)
+            {
+                await ShowMessageAsync("Could not import notes", "That file didn't contain any notes.");
+                return;
+            }
+
+            var existing = AppServices.Settings.PlayerNotes;
+            var replace = false;
+            if (existing.Count > 0)
+            {
+                var choice = await ShowImportModeDialogAsync(existing.Count, imported.Count);
+                if (choice is null)
+                {
+                    return;
+                }
+
+                replace = choice.Value;
+            }
+
+            var merge = PlayerNotesTransfer.Apply(existing, imported, replace);
+            AppServices.Settings.Save();
+            ShowNotesTransferStatus(DescribeImport(merge, replace));
+        }
+        catch (Exception ex)
+        {
+            await ShowMessageAsync("Could not import notes", ex.Message);
+        }
+        finally
+        {
+            _notesTransferBusy = false;
+        }
     }
 
-    private void OnResetPositionsClick(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    private async Task<bool?> ShowImportModeDialogAsync(int existingCount, int importedCount)
     {
-        if (_viewModel is null)
+        var dialog = new ContentDialog
         {
-            return;
-        }
+            Title = "Import player notes",
+            Content = $"You already have {existingCount} note(s). Merge updates matching players and keeps the rest. Replace discards current notes, then imports {importedCount}.",
+            PrimaryButtonText = "Merge",
+            SecondaryButtonText = "Replace",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = XamlRoot,
+        };
 
-        _viewModel.ResetPanelPositionsCommand.Execute(null);
-        ResetPositionsStatus.Text = _viewModel.PanelLayoutStatusMessage;
-        ResetPositionsStatus.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+        var result = await dialog.ShowAsync();
+        return result switch
+        {
+            ContentDialogResult.Primary => false,
+            ContentDialogResult.Secondary => true,
+            _ => null,
+        };
     }
 
-    private void OnSettingChanged(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    private async Task ShowMessageAsync(string title, string message)
     {
-        if (_suppressEvents)
+        var dialog = new ContentDialog
         {
-            return;
-        }
-
-        ApplySettings();
+            Title = title,
+            Content = message,
+            CloseButtonText = "OK",
+            XamlRoot = XamlRoot,
+        };
+        await dialog.ShowAsync();
     }
 
-    private void ApplySettings()
+    private void ShowNotesTransferStatus(string message)
     {
-        if (_viewModel is null)
+        NotesTransferStatus.Text = message;
+        NotesTransferStatus.Visibility = Visibility.Visible;
+    }
+
+    private static int CountNotes(IReadOnlyDictionary<string, PlayerNote> notes) =>
+        notes.Count(pair => !string.IsNullOrWhiteSpace(pair.Key) && pair.Value is { HasSavedData: true });
+
+    private static string DescribeImport(PlayerNotesMergeResult result, bool replace)
+    {
+        if (replace)
         {
-            return;
+            return $"Replaced notes with {result.Total} imported note(s).";
         }
 
-        _viewModel.ShowPlayerPanel = PlayerToggle.IsOn;
-        _viewModel.ShowBountyTimer = BountyTimerToggle.IsOn;
-        _viewModel.ShowPowerTimer = PowerTimerToggle.IsOn;
-        _viewModel.ShowWisdomTimer = WisdomTimerToggle.IsOn;
-        _viewModel.ShowLotusTimer = LotusTimerToggle.IsOn;
-        _viewModel.OverlayOpacity = OpacitySlider.Value;
-        _viewModel.RuneTimerLeadSeconds = (int)RuneLeadNumberBox.Value;
-        _viewModel.IsTurboMode = TurboToggle.IsOn;
-        _viewModel.SaveSettingsCommand.Execute(null);
+        return $"Imported notes: {result.Added} added, {result.Updated} updated.";
     }
 }

@@ -12,16 +12,41 @@ internal static class MockMatchData
         ClockTimeSeconds = 228,
         GameTimeSeconds = (32 * 60) + 48,
         IsDaytime = true,
+        MatchId = "debug-preview",
         RadiantScore = 24,
         DireScore = 19,
         NetWorthLead = 1840,
         PlayerName = "APEM Tester",
+        SteamId = "76561198000000001",
+        Kills = 8,
+        Deaths = 2,
+        Assists = 6,
+        LastHits = 214,
+        Denies = 12,
         Gpm = 612,
         Xpm = 704,
+        Gold = 2840,
         TeamName = "radiant",
         HeroName = "npc_dota_hero_juggernaut",
         HeroLevel = 18,
+        Health = 1680,
+        MaxHealth = 2100,
+        Mana = 420,
+        MaxMana = 600,
         HeroAlive = true,
+        Items =
+        [
+            new SlotSnapshot { Slot = "slot0", Name = "bfury" },
+            new SlotSnapshot { Slot = "slot1", Name = "power_treads" },
+            new SlotSnapshot { Slot = "slot2", Name = "manta" },
+        ],
+        Abilities =
+        [
+            new SlotSnapshot { Slot = "ability0", Name = "blade_fury", Level = 4 },
+            new SlotSnapshot { Slot = "ability1", Name = "healing_ward", Level = 3 },
+            new SlotSnapshot { Slot = "ability2", Name = "blade_dance", Level = 4 },
+            new SlotSnapshot { Slot = "ability3", Name = "omni_slash", Level = 3 },
+        ],
         Players = CreatePlayers(),
     };
 
@@ -41,6 +66,7 @@ internal static class MockMatchData
         new MatchPlayer
         {
             Name = "APEM Tester",
+            SteamId = "76561198000000001",
             TeamName = "radiant",
             HeroName = "npc_dota_hero_juggernaut",
             HeroLevel = 18,

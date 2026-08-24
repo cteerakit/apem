@@ -8,10 +8,12 @@ public sealed class MatchSnapshot
     public int ClockTimeSeconds { get; set; }
     public int GameTimeSeconds { get; set; }
     public bool IsDaytime { get; set; }
+    public string MatchId { get; set; } = string.Empty;
     public int RadiantScore { get; set; }
     public int DireScore { get; set; }
     public int NetWorthLead { get; set; }
     public string PlayerName { get; set; } = string.Empty;
+    public string SteamId { get; set; } = string.Empty;
     public int Kills { get; set; }
     public int Deaths { get; set; }
     public int Assists { get; set; }
