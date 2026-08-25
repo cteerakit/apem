@@ -21,7 +21,7 @@ public sealed class SteamWebApiService
 
     public SteamWebApiService()
     {
-        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("APEM/1.0");
+        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mango/1.0");
     }
 
     public async Task<IReadOnlyDictionary<string, SteamPlayerSummary>> GetPlayerSummariesAsync(

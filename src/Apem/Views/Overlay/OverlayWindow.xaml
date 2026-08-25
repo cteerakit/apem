@@ -8,7 +8,7 @@
     xmlns:models="using:Apem.Models"
     xmlns:winuiex="using:WinUIEx"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="APEM Overlay"
+    Title="Mango Overlay"
     mc:Ignorable="d">
     <Window.SystemBackdrop>
         <winuiex:TransparentTintBackdrop />

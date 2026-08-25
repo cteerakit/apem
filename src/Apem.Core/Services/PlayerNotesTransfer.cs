@@ -55,7 +55,7 @@ public static class PlayerNotesTransfer
                     && formatElement.ValueKind == JsonValueKind.String
                     && !string.Equals(formatElement.GetString(), FormatId, StringComparison.OrdinalIgnoreCase))
                 {
-                    error = "That JSON file is not an APEM player notes export.";
+                    error = "That JSON file is not a Mango player notes export.";
                     return false;
                 }
 

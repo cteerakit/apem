@@ -68,7 +68,7 @@ public class PlayerNotesTransferTests
         const string json = """{ "format": "other", "notes": { "a": "b" } }""";
 
         Assert.False(PlayerNotesTransfer.TryParse(json, out _, out var error));
-        Assert.Equal("That JSON file is not an APEM player notes export.", error);
+        Assert.Equal("That JSON file is not a Mango player notes export.", error);
     }
 
     [Fact]

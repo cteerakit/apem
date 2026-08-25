@@ -31,7 +31,7 @@ public sealed class GsiConfigInstaller
 
     public static string BuildConfigContent(AppSettings settings) =>
         $$"""
-        "APEM"
+        "Mango"
         {
             "uri"               "http://127.0.0.1:{{settings.GsiPort}}/"
             "timeout"           "5.0"

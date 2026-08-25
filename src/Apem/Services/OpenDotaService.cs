@@ -22,7 +22,7 @@ public sealed class OpenDotaService
             BaseAddress = new Uri("https://api.opendota.com/api/"),
             Timeout = TimeSpan.FromSeconds(20),
         };
-        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("APEM/1.0");
+        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mango/1.0");
 
         _cacheDirectory = Path.Combine(AppSettings.SettingsDirectory, "cache");
         Directory.CreateDirectory(_cacheDirectory);

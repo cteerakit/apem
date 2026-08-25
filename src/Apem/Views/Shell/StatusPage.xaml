@@ -56,7 +56,7 @@
                         <TextBlock Text="Setup" Style="{StaticResource SubtitleTextBlockStyle}" />
                         <TextBlock
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Text="Get APEM connected to Dota 2 Game State Integration."
+                            Text="Get Mango connected to Dota 2 Game State Integration."
                             TextWrapping="WrapWholeWords" />
                         <TextBlock Text="1. Install GSI config into Dota cfg/gamestate_integration" />
                         <TextBlock Text="2. Steam launch option: -gamestateintegration" />

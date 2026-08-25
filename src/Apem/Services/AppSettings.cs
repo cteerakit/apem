@@ -36,17 +36,24 @@ public sealed class AppSettings
     public PanelLayoutSettings PanelLayout { get; set; } = new();
 
     public static string SettingsDirectory =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "APEM");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Mango");
 
     public static string SettingsPath => Path.Combine(SettingsDirectory, SettingsFileName);
+
+    private static string LegacySettingsPath =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "APEM", SettingsFileName);
 
     public static AppSettings Load()
     {
         try
         {
-            if (File.Exists(SettingsPath))
+            var path = File.Exists(SettingsPath) ? SettingsPath
+                : File.Exists(LegacySettingsPath) ? LegacySettingsPath
+                : null;
+
+            if (path is not null)
             {
-                var json = File.ReadAllText(SettingsPath);
+                var json = File.ReadAllText(path);
                 var settings = JsonSerializer.Deserialize<AppSettings>(json) ?? CreateDefault();
                 settings.Normalize();
                 return settings;

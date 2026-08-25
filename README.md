@@ -1,6 +1,6 @@
-# APEM — Dota 2 Companion App
+# Mango — Dota 2 Companion App
 
-Windows desktop companion for Dota 2. APEM connects through Valve Game State Integration (GSI) and OpenDota to show a live match roster, player profiles, notes, and an optional in-game overlay.
+Windows desktop companion for Dota 2. Mango connects through Valve Game State Integration (GSI) and OpenDota to show a live match roster, player profiles, notes, and an optional in-game overlay.
 
 ## Features
 
@@ -35,7 +35,7 @@ dotnet build Apem.sln
 dotnet run --project src/Apem/Apem.csproj
 ```
 
-2. On first launch, APEM installs `gamestate_integration_apem.cfg` into your Dota `cfg/gamestate_integration/` folder.
+2. On first launch, Mango installs `gamestate_integration_apem.cfg` into your Dota `cfg/gamestate_integration/` folder.
 3. Add `-gamestateintegration` to Dota launch options in Steam if not already set.
 4. Start a match — live data updates from GSI on `http://127.0.0.1:40000/`. Open **Match** in the companion window for the roster, or enable the overlay for in-game widgets.
 
@@ -48,7 +48,7 @@ dotnet run --project src/Apem/Apem.csproj
 
 ## Settings
 
-Stored in `%LOCALAPPDATA%\APEM\settings.json`:
+Stored in `%LOCALAPPDATA%\Mango\settings.json`:
 
 - Overlay panel visibility, opacity, and layout positions
 - Turbo mode timer rules

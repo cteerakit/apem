@@ -16,8 +16,8 @@
   <mp:PhoneIdentity PhoneProductId="D9984A3D-08FB-4EF1-BEF8-0B6EE6E0A12D" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>APEM</DisplayName>
-    <PublisherDisplayName>APEM</PublisherDisplayName>
+    <DisplayName>Mango</DisplayName>
+    <PublisherDisplayName>Mango</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
@@ -35,7 +35,7 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="APEM"
+        DisplayName="Mango"
         Description="Dota 2 live companion overlay"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
