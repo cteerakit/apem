@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Mango (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Mango (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

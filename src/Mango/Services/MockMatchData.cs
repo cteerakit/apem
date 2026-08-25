@@ -1,0 +1,218 @@
+using Mango.Models;
+
+namespace Mango.Services;
+
+internal static class MockMatchData
+{
+    public static MatchSnapshot CreateSnapshot() => new()
+    {
+        ReceivedAtUtc = DateTimeOffset.UtcNow,
+        IsConnected = true,
+        GameState = "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
+        ClockTimeSeconds = 228,
+        GameTimeSeconds = (32 * 60) + 48,
+        IsDaytime = true,
+        MatchId = "debug-preview",
+        RadiantScore = 24,
+        DireScore = 19,
+        NetWorthLead = 1840,
+        PlayerName = "Mango Tester",
+        SteamId = "76561198000000001",
+        Kills = 8,
+        Deaths = 2,
+        Assists = 6,
+        LastHits = 214,
+        Denies = 12,
+        Gpm = 612,
+        Xpm = 704,
+        Gold = 2840,
+        TeamName = "radiant",
+        HeroName = "npc_dota_hero_juggernaut",
+        HeroLevel = 18,
+        Health = 1680,
+        MaxHealth = 2100,
+        Mana = 420,
+        MaxMana = 600,
+        HeroAlive = true,
+        Items =
+        [
+            new SlotSnapshot { Slot = "slot0", Name = "bfury" },
+            new SlotSnapshot { Slot = "slot1", Name = "power_treads" },
+            new SlotSnapshot { Slot = "slot2", Name = "manta" },
+        ],
+        Abilities =
+        [
+            new SlotSnapshot { Slot = "ability0", Name = "blade_fury", Level = 4 },
+            new SlotSnapshot { Slot = "ability1", Name = "healing_ward", Level = 3 },
+            new SlotSnapshot { Slot = "ability2", Name = "blade_dance", Level = 4 },
+            new SlotSnapshot { Slot = "ability3", Name = "omni_slash", Level = 3 },
+        ],
+        Players = CreatePlayers(),
+    };
+
+    public static IReadOnlyList<BuildSuggestionItem> CreateBuildSuggestions() =>
+    [
+        new BuildSuggestionItem { Name = "quelling_blade" },
+        new BuildSuggestionItem { Name = "power_treads" },
+        new BuildSuggestionItem { Name = "bfury" },
+        new BuildSuggestionItem { Name = "manta" },
+        new BuildSuggestionItem { Name = "butterfly" },
+        new BuildSuggestionItem { Name = "abyssal_blade" },
+        new BuildSuggestionItem { Name = "satanic" },
+    ];
+
+    public static IReadOnlyList<MatchPlayer> CreatePlayers() =>
+    [
+        new MatchPlayer
+        {
+            Name = "Mango Tester",
+            SteamId = "76561198000000001",
+            TeamName = "radiant",
+            HeroName = "npc_dota_hero_juggernaut",
+            HeroLevel = 18,
+            Kills = 8,
+            Deaths = 2,
+            Assists = 6,
+            LastHits = 214,
+            Denies = 12,
+            Gpm = 612,
+            Xpm = 704,
+            Gold = 2840,
+        },
+        new MatchPlayer
+        {
+            Name = "Radiant Mid",
+            TeamName = "radiant",
+            HeroName = "npc_dota_hero_storm_spirit",
+            HeroLevel = 17,
+            Kills = 6,
+            Deaths = 4,
+            Assists = 9,
+            LastHits = 168,
+            Denies = 8,
+            Gpm = 548,
+            Xpm = 692,
+            Gold = 1960,
+        },
+        new MatchPlayer
+        {
+            Name = "Radiant Offlane",
+            TeamName = "radiant",
+            HeroName = "npc_dota_hero_tidehunter",
+            HeroLevel = 16,
+            Kills = 2,
+            Deaths = 5,
+            Assists = 14,
+            LastHits = 92,
+            Denies = 6,
+            Gpm = 412,
+            Xpm = 488,
+            Gold = 1240,
+        },
+        new MatchPlayer
+        {
+            Name = "Radiant Support",
+            TeamName = "radiant",
+            HeroName = "npc_dota_hero_crystal_maiden",
+            HeroLevel = 14,
+            Kills = 1,
+            Deaths = 7,
+            Assists = 18,
+            LastHits = 28,
+            Denies = 2,
+            Gpm = 286,
+            Xpm = 392,
+            Gold = 620,
+        },
+        new MatchPlayer
+        {
+            Name = "Radiant Hard Support",
+            TeamName = "radiant",
+            HeroName = "npc_dota_hero_lich",
+            HeroLevel = 13,
+            Kills = 0,
+            Deaths = 6,
+            Assists = 16,
+            LastHits = 18,
+            Denies = 1,
+            Gpm = 248,
+            Xpm = 356,
+            Gold = 480,
+        },
+        new MatchPlayer
+        {
+            Name = "Dire Carry",
+            TeamName = "dire",
+            HeroName = "npc_dota_hero_phantom_assassin",
+            HeroLevel = 17,
+            Kills = 7,
+            Deaths = 3,
+            Assists = 4,
+            LastHits = 198,
+            Denies = 10,
+            Gpm = 584,
+            Xpm = 668,
+            Gold = 2520,
+        },
+        new MatchPlayer
+        {
+            Name = "Dire Mid",
+            TeamName = "dire",
+            HeroName = "npc_dota_hero_invoker",
+            HeroLevel = 16,
+            Kills = 5,
+            Deaths = 4,
+            Assists = 7,
+            LastHits = 142,
+            Denies = 14,
+            Gpm = 512,
+            Xpm = 644,
+            Gold = 1780,
+        },
+        new MatchPlayer
+        {
+            Name = "Dire Offlane",
+            TeamName = "dire",
+            HeroName = "npc_dota_hero_axe",
+            HeroLevel = 15,
+            Kills = 3,
+            Deaths = 6,
+            Assists = 11,
+            LastHits = 84,
+            Denies = 4,
+            Gpm = 396,
+            Xpm = 452,
+            Gold = 980,
+        },
+        new MatchPlayer
+        {
+            Name = "Dire Support",
+            TeamName = "dire",
+            HeroName = "npc_dota_hero_shadow_shaman",
+            HeroLevel = 13,
+            Kills = 2,
+            Deaths = 8,
+            Assists = 12,
+            LastHits = 22,
+            Denies = 0,
+            Gpm = 268,
+            Xpm = 368,
+            Gold = 540,
+        },
+        new MatchPlayer
+        {
+            Name = "Dire Hard Support",
+            TeamName = "dire",
+            HeroName = "npc_dota_hero_warlock",
+            HeroLevel = 12,
+            Kills = 1,
+            Deaths = 9,
+            Assists = 13,
+            LastHits = 14,
+            Denies = 1,
+            Gpm = 224,
+            Xpm = 332,
+            Gold = 420,
+        },
+    ];
+}

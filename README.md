@@ -28,14 +28,14 @@ Windows desktop companion for Dota 2. Mango connects through Valve Game State In
 
 ## Quick start
 
-1. Open `Apem.sln` in Visual Studio 2022 or run:
+1. Open `Mango.sln` in Visual Studio 2022 or run:
 
 ```powershell
-dotnet build Apem.sln
-dotnet run --project src/Apem/Apem.csproj
+dotnet build Mango.sln
+dotnet run --project src/Mango/Mango.csproj
 ```
 
-2. On first launch, Mango installs `gamestate_integration_apem.cfg` into your Dota `cfg/gamestate_integration/` folder.
+2. On first launch, Mango installs `gamestate_integration_mango.cfg` into your Dota `cfg/gamestate_integration/` folder.
 3. Add `-gamestateintegration` to Dota launch options in Steam if not already set.
 4. Start a match — live data updates from GSI on `http://127.0.0.1:40000/`. Open **Match** in the companion window for the roster, or enable the overlay for in-game widgets.
 
@@ -71,7 +71,7 @@ Use **Save settings** in the shell after changing panel toggles or opacity on th
 MSIX packaging is enabled via the Windows App SDK project. Publish from Visual Studio (**Package and Publish**) or:
 
 ```powershell
-dotnet publish src/Apem/Apem.csproj -c Release
+dotnet publish src/Mango/Mango.csproj -c Release
 ```
 
 ## Architecture
